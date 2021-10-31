@@ -52,6 +52,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.mlkit.vision.common.InputImage;
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -385,15 +386,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       if (cameraImage != null) {
         // TODO: Process `cameraImage` using your ML inference model.
 
-        // convert image to inputImage
-//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
-//
-//        List<Recognition> results = MyObjectdetector.getResults(inputImage);
-//        for(Recognition r : results) {
-//          Pair<Float, Float> coor = r.getCenterCoordinate();
-//          calDistance(frame, camera, coor);
-//        }
-//        cameraImage.close();
+//         convert image to inputImage
+        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
+
+        List<Recognition> results = MyObjectdetector.getResults(inputImage);
+        for(Recognition r : results) {
+          Pair<Float, Float> coor = r.getCenterCoordinate();
+          calDistance(frame, camera, coor);
+        }
+        cameraImage.close();
       }
     }
 
