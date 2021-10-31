@@ -630,12 +630,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Log.e(TAG, "Runtime error from acquiring camera image", e);
     } finally {
       if (cameraImage != null) {
-        // TODO: Process `cameraImage` using your ML inference model.
-
 //         convert image to inputImage
         InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
 
-        List<Recognition> results = MyObjectdetector.getResults(inputImage);
+        Log.d("asdf", "Start detector");
+        MyObjectdetector myObjectdetector = new MyObjectdetector();
+        List<Recognition> results = myObjectdetector.getResults(inputImage);
+        Log.d("asdf", results.toString());
         for(Recognition r : results) {
           Pair<Float, Float> coor = r.getCenterCoordinate();
           calDistance(frame, camera, coor);

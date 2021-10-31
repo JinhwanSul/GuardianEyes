@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.PrecomputedText;
+import android.util.Log;
 
 import com.google.mlkit.common.model.LocalModel;
 import com.google.mlkit.vision.common.InputImage;
@@ -17,14 +18,15 @@ import java.util.List;
 
 public class MyObjectdetector {
 
-    private static LocalModel localModel;
-    private static CustomObjectDetectorOptions customObjectDetectorOptions;
-    private static ObjectDetector objectDetector;
+    private LocalModel localModel;
+    private CustomObjectDetectorOptions customObjectDetectorOptions;
+    private ObjectDetector objectDetector;
 
     MyObjectdetector () {
         localModel = new LocalModel.Builder()
-                .setAssetFilePath("detect.tflite")
+                .setAssetFilePath("detectSample.tflite")
                 .build();
+
         // Live detection and tracking
         customObjectDetectorOptions = new CustomObjectDetectorOptions.Builder(localModel)
                         .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
@@ -36,9 +38,10 @@ public class MyObjectdetector {
         objectDetector = ObjectDetection.getClient(customObjectDetectorOptions);
     }
 
-     public static List<Recognition> getResults (InputImage image ) {
+     public List<Recognition> getResults (InputImage image ) {
         List<Recognition> recList = new ArrayList<Recognition>() {};
-        objectDetector
+       Log.d("asdf", "before processing");
+       objectDetector
                  .process(image)
                  .addOnFailureListener(e -> {
                      e.printStackTrace();
