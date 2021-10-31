@@ -1,13 +1,17 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.content.Intent;
 import android.media.Image;
+import android.net.Uri;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,8 +23,12 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.PlaybackStatus;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.RecordingConfig;
+import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
+import com.google.ar.core.Track;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -42,17 +50,25 @@ import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneRenderer
 import com.google.ar.core.examples.java.common.samplerender.arcore.SpecularCubemapFilter;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
+import com.google.ar.core.exceptions.PlaybackFailedException;
+import com.google.ar.core.exceptions.RecordingFailedException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
+import org.joda.time.DateTime;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
@@ -61,11 +77,31 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
 
+  private static final String MP4_DATASET_FILENAME_TEMPLATE = "arcore-dataset-%s.mp4";
+  private static final String MP4_DATASET_TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss";
+
   private static final float Z_NEAR = 0.1f;
   private static final float Z_FAR = 100f;
 
   private static final int CUBEMAP_RESOLUTION = 16;
   private static final int CUBEMAP_NUMBER_OF_IMPORTANCE_SAMPLES = 32;
+
+  private enum AppState {
+    IDLE,
+    RECORDING,
+    PLAYBACK
+  }
+
+  // Randomly generated UUID and custom MIME type to mark the anchor track for this sample.
+  private static final UUID ANCHOR_TRACK_ID =
+          UUID.fromString("a65e59fc-2e13-4607-b514-35302121c138");
+  private static final String ANCHOR_TRACK_MIME_TYPE =
+          "application/hello-recording-playback-anchor";
+
+  private final AtomicReference<AppState> currentState = new AtomicReference<>(AppState.IDLE);
+
+  private String playbackDatasetPath;
+  private String lastRecordingDatasetPath;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
@@ -79,6 +115,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private TapHelper tapHelper;
   private SampleRender render;
+
+  private Button startRecordingButton;
+  private Button stopRecordingButton;
+  private Button startPlaybackButton;
+  private Button stopPlaybackButton;
+  private TextView recordingPlaybackPathTextView;
 
   private PlaneRenderer planeRenderer;
   private BackgroundRenderer backgroundRenderer;
@@ -111,6 +153,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    loadInternalStateFromIntentExtras();
+
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     textView = findViewById(R.id.text_view);
@@ -126,6 +170,47 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     installRequested = false;
 
     depthSettings.onCreate(this);
+
+    startRecordingButton = (Button)findViewById(R.id.start_recording_button);
+    stopRecordingButton = (Button)findViewById(R.id.stop_recording_button);
+    startRecordingButton.setOnClickListener(view -> startRecording());
+    stopRecordingButton.setOnClickListener(view -> stopRecording());
+
+    startPlaybackButton = (Button)findViewById(R.id.playback_button);
+    stopPlaybackButton = (Button)findViewById(R.id.close_playback_button);
+    startPlaybackButton.setOnClickListener(view -> startPlayback());
+    stopPlaybackButton.setOnClickListener(view -> stopPlayback());
+    recordingPlaybackPathTextView = findViewById(R.id.recording_playback_path);
+    updateUI();
+  }
+
+  /** Performs action when playback button is clicked. */
+  private void startPlayback() {
+    if (playbackDatasetPath == null) {
+      return;
+    }
+    currentState.set(AppState.PLAYBACK);
+    restartActivityWithIntentExtras();
+  }
+
+  /** Performs action when close_playback button is clicked. */
+  private void stopPlayback() {
+    currentState.set(AppState.IDLE);
+    restartActivityWithIntentExtras();
+  }
+
+  private static final String DESIRED_DATASET_PATH_KEY = "desired_dataset_path_key";
+  private static final String DESIRED_APP_STATE_KEY = "desired_app_state_key";
+  private static final int PERMISSIONS_REQUEST_CODE = 0;
+
+  private void restartActivityWithIntentExtras() {
+    Intent intent = this.getIntent();
+    Bundle bundle = new Bundle();
+    bundle.putString(DESIRED_APP_STATE_KEY, currentState.get().name());
+    bundle.putString(DESIRED_DATASET_PATH_KEY, playbackDatasetPath);
+    intent.putExtras(bundle);
+    this.finish();
+    this.startActivity(intent);
   }
 
   @Override
@@ -135,6 +220,27 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       session = null;
     }
     super.onDestroy();
+  }
+
+  private void setPlaybackDatasetPath() {
+    if (session.getPlaybackStatus() == PlaybackStatus.OK) {
+      Log.d(TAG, "Session is already playing back.");
+      setStateAndUpdateUI(AppState.PLAYBACK);
+      return;
+    }
+    if (playbackDatasetPath != null) {
+      try {
+        session.setPlaybackDatasetUri(Uri.fromFile(new File(playbackDatasetPath)));
+      } catch (PlaybackFailedException e) {
+        String errorMsg = "Failed to set playback MP4 dataset. " + e;
+        Log.e(TAG, errorMsg, e);
+        messageSnackbarHelper.showError(this, errorMsg);
+        Log.d(TAG, "Setting app state to IDLE, as the playback is not in progress.");
+        setStateAndUpdateUI(AppState.IDLE);
+        return;
+      }
+      setStateAndUpdateUI(AppState.PLAYBACK);
+    }
   }
 
   @Override
@@ -162,6 +268,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
         // Create the session.
         session = new Session(/* context= */ this);
+        if (currentState.get() == AppState.PLAYBACK) {
+          // Dataset playback will start when session.resume() is called.
+          setPlaybackDatasetPath();
+        }
       } catch (UnavailableArcoreNotInstalledException
               | UnavailableUserDeclinedInstallationException e) {
         message = "Please install ARCore";
@@ -197,8 +307,144 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       return;
     }
 
+    if (currentState.get() == AppState.PLAYBACK) {
+      // Must be called after dataset playback is started by call to session.resume().
+      checkPlaybackStatus();
+    }
     surfaceView.onResume();
     displayRotationHelper.onResume();
+  }
+
+  /** Checks the playback is in progress without issues. */
+  private void checkPlaybackStatus() {
+    Log.d(TAG, "jeff "+session.getPlaybackStatus());
+    if ((session.getPlaybackStatus() != PlaybackStatus.OK)
+            && (session.getPlaybackStatus() != PlaybackStatus.FINISHED)) {
+      setStateAndUpdateUI(AppState.IDLE);
+    }
+  }
+
+  private void updateUI() {
+    Log.d(TAG, "jeff update UI:" + currentState.get());
+    switch (currentState.get()) {
+      case IDLE:
+        startRecordingButton.setVisibility(View.VISIBLE);
+        startRecordingButton.setEnabled(true);
+        stopRecordingButton.setVisibility(View.GONE);
+        stopRecordingButton.setEnabled(false);
+        stopPlaybackButton.setVisibility(View.INVISIBLE);
+        stopPlaybackButton.setEnabled(false);
+        startPlaybackButton.setVisibility(View.VISIBLE);
+        startPlaybackButton.setEnabled(playbackDatasetPath != null);
+        recordingPlaybackPathTextView.setText(
+                getResources()
+                        .getString(
+                                R.string.playback_path_text,
+                                playbackDatasetPath == null ? "" : playbackDatasetPath));
+        break;
+      case RECORDING:
+        startRecordingButton.setVisibility(View.GONE);
+        startRecordingButton.setEnabled(false);
+        stopRecordingButton.setVisibility(View.VISIBLE);
+        stopRecordingButton.setEnabled(true);
+        stopPlaybackButton.setVisibility(View.INVISIBLE);
+        stopPlaybackButton.setEnabled(false);
+        startPlaybackButton.setEnabled(false);
+        recordingPlaybackPathTextView.setText(
+                getResources()
+                        .getString(
+                                R.string.recording_path_text,
+                                lastRecordingDatasetPath == null ? "" : lastRecordingDatasetPath));
+        break;
+      case PLAYBACK:
+        startRecordingButton.setVisibility(View.INVISIBLE);
+        stopRecordingButton.setVisibility(View.INVISIBLE);
+        startPlaybackButton.setVisibility(View.INVISIBLE);
+        startRecordingButton.setEnabled(false);
+        stopRecordingButton.setEnabled(false);
+        stopPlaybackButton.setVisibility(View.VISIBLE);
+        stopPlaybackButton.setEnabled(true);
+        recordingPlaybackPathTextView.setText("");
+        break;
+    }
+  }
+
+  /** Generates a new MP4 dataset filename based on the current system time. */
+  private static String getNewMp4DatasetFilename() {
+    return String.format(
+            Locale.ENGLISH,
+            MP4_DATASET_FILENAME_TEMPLATE,
+            DateTime.now().toString(MP4_DATASET_TIMESTAMP_FORMAT));
+  }
+
+  /** Generates a new MP4 dataset path based on the current system time. */
+  private String getNewDatasetPath() {
+    File baseDir = this.getExternalFilesDir(null);
+    if (baseDir == null) {
+      return null;
+    }
+    return new File(this.getExternalFilesDir(null), getNewMp4DatasetFilename()).getAbsolutePath();
+  }
+
+  /** Performs action when start_recording button is clicked. */
+  private void startRecording() {
+    try {
+      lastRecordingDatasetPath = getNewDatasetPath();
+      if (lastRecordingDatasetPath == null) {
+        Log.d(TAG, "Failed to generate a MP4 dataset path for recording.");
+        return;
+      }
+
+      Track anchorTrack =
+              new Track(session).setId(ANCHOR_TRACK_ID).setMimeType(ANCHOR_TRACK_MIME_TYPE);
+
+      session.startRecording(
+              new RecordingConfig(session)
+                      .setMp4DatasetUri(Uri.fromFile(new File(lastRecordingDatasetPath)))
+                      .setAutoStopOnPause(false)
+                      .addTrack(anchorTrack));
+    } catch (RecordingFailedException e) {
+      String errorMessage = "Failed to start recording. " + e;
+      Log.e(TAG, errorMessage, e);
+      messageSnackbarHelper.showError(this, errorMessage);
+      return;
+    }
+    if (session.getRecordingStatus() != RecordingStatus.OK) {
+      Log.d(TAG,
+              "Failed to start recording, recording status is " + session.getRecordingStatus());
+      return;
+    }
+    setStateAndUpdateUI(AppState.RECORDING);
+  }
+
+  /** Performs action when stop_recording button is clicked. */
+  private void stopRecording() {
+    try {
+      session.stopRecording();
+    } catch (RecordingFailedException e) {
+      String errorMessage = "Failed to stop recording. " + e;
+      Log.e(TAG, errorMessage, e);
+      messageSnackbarHelper.showError(this, errorMessage);
+      return;
+    }
+    if (session.getRecordingStatus() == RecordingStatus.OK) {
+      Log.d(TAG,
+              "Failed to stop recording, recording status is " + session.getRecordingStatus());
+      return;
+    }
+    if (new File(lastRecordingDatasetPath).exists()) {
+      playbackDatasetPath = lastRecordingDatasetPath;
+      Log.d(TAG, "MP4 dataset has been saved at: " + playbackDatasetPath);
+    } else {
+      Log.d(TAG,
+              "Recording failed. File " + lastRecordingDatasetPath + " wasn't created.");
+    }
+    setStateAndUpdateUI(AppState.IDLE);
+  }
+
+  private void setStateAndUpdateUI(AppState state) {
+    currentState.set(state);
+    updateUI();
   }
 
   @Override
@@ -488,5 +734,33 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
 
     session.configure(config);
+  }
+
+  private void loadInternalStateFromIntentExtras() {
+    if (getIntent() == null || getIntent().getExtras() == null) {
+      return;
+    }
+    Bundle bundle = getIntent().getExtras();
+    if (bundle.containsKey(DESIRED_DATASET_PATH_KEY)) {
+      playbackDatasetPath = getIntent().getStringExtra(DESIRED_DATASET_PATH_KEY);
+    }
+    if (bundle.containsKey(DESIRED_APP_STATE_KEY)) {
+      String state = getIntent().getStringExtra(DESIRED_APP_STATE_KEY);
+      if (state != null) {
+        switch (state) {
+          case "PLAYBACK":
+            currentState.set(AppState.PLAYBACK);
+            break;
+          case "IDLE":
+            currentState.set(AppState.IDLE);
+            break;
+          case "RECORDING":
+            currentState.set(AppState.RECORDING);
+            break;
+          default:
+            break;
+        }
+      }
+    }
   }
 }

@@ -35,4 +35,92 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content" />
 
+  <LinearLayout
+      android:id="@+id/buttons_panel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:padding="5dp"
+      android:layout_alignParentBottom="true"
+      android:baselineAligned="false">
+
+  <FrameLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:layout_weight="1"
+      android:gravity="center">
+
+    <Button
+        android:id="@+id/start_recording_button"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textStyle="bold"
+        android:text="start recording"
+        android:textColor="@android:color/holo_green_light"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/stop_recording_button"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        android:textStyle="bold"
+        android:text="stop recording"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="18sp"/>
+
+  </FrameLayout>
+
+  <FrameLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:layout_weight="1"
+      android:gravity="center">
+
+    <Button
+        android:id="@+id/playback_button"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="playback"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:enabled="false"/>
+
+  </FrameLayout>
+  </LinearLayout>
+
+  <TextView
+      android:id="@+id/recording_playback_path"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textSize="12sp"
+      android:padding="10dp"
+      android:layout_above="@id/buttons_panel"/>
+
+  <Button
+      android:id="@+id/close_playback_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:visibility="invisible"
+      android:drawableStart="@android:drawable/ic_menu_close_clear_cancel"
+      android:background="@android:color/transparent"
+      android:padding="10dp"
+      android:layout_alignParentEnd="true"/>
+
+<!--  <Button-->
+<!--      android:id="@+id/buttonForRecord"-->
+<!--      android:layout_width="wrap_content"-->
+<!--      android:layout_height="wrap_content"-->
+<!--      android:layout_alignParentBottom="true"-->
+<!--      android:layout_centerHorizontal="true"-->
+<!--      android:text="record" />-->
+
+<!--  <Button-->
+<!--      android:id="@+id/buttonForPlayback"-->
+<!--      android:layout_width="wrap_content"-->
+<!--      android:layout_height="wrap_content"-->
+<!--      android:layout_alignParentBottom="true"-->
+<!--      android:layout_toRightOf="@id/buttonForRecord"-->
+<!--      android:text="playback" />-->
+
 </RelativeLayout>
