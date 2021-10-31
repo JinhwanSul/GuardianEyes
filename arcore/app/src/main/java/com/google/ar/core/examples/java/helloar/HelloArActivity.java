@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.util.Pair;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -367,6 +368,28 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
     Camera camera = frame.getCamera();
 
+    Image cameraImage = null;
+    try {
+      cameraImage = frame.acquireCameraImage();
+    } catch (NotYetAvailableException e) {
+      // NotYetAvailableException is an exception that can be expected when the camera is not ready
+      // yet. The image may become available on a next frame.
+    } catch (RuntimeException e) {
+      // A different exception occurred, e.g. DeadlineExceededException, ResourceExhaustedException.
+      // Handle this error appropriately.
+      Log.e(TAG, "Runtime error from acquiring camera image", e);
+    } finally {
+      if (cameraImage != null) {
+        // TODO: Process `cameraImage` using your ML inference model.
+//        List<Recognition> results = MyObjectdetector.getResults(cameraImage);
+//        for(Recognition r : results) {
+//          Pair<Float, Float> coor = r.getCenterCoordinate();
+//          calDistance(frame, camera, coor);
+//        }
+        cameraImage.close();
+      }
+    }
+
     // Update BackgroundRenderer state to match the depth settings.
     try {
       backgroundRenderer.setUseDepthVisualization(
@@ -393,7 +416,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
 
     // Handle one tap per frame.
-    handleTap(frame, camera);
+//    handleTap(frame, camera);
 
     // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
     trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
@@ -456,18 +479,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  private void handleTap(Frame frame, Camera camera) {
-//    MotionEvent tap = tapHelper.poll();
-//
-//    if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
+  private void calDistance(Frame frame, Camera camera, Pair<Float, Float> coor) {
     if (camera.getTrackingState() == TrackingState.TRACKING) {
-//      List<HitResult> hitResultList;
-//      hitResultList = frame.hitTest(tap);
-
-      List<HitResult> hitResultList;
-      float x = surfaceView.getWidth() / 2f;
-      float y = surfaceView.getHeight() / 2f;
-      hitResultList = frame.hitTest(x, y);
+      List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
 
       for (HitResult hit : hitResultList) {
         textView.setText("distance is " + hit.getDistance() + " m");
