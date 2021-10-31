@@ -19,45 +19,35 @@ import com.google.mlkit.vision.objects.DetectedObject;
 import com.google.mlkit.vision.objects.ObjectDetection;
 import com.google.mlkit.vision.objects.ObjectDetector;
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions;
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyObjectdetector {
 
-//    private LocalModel localModel;
-//    private CustomObjectDetectorOptions customObjectDetectorOptions;
-//    private ObjectDetector objectDetector;
-
-    ObjectDetectorOptions options;
-    ObjectDetector detector;
+    private LocalModel localModel;
+    private CustomObjectDetectorOptions customObjectDetectorOptions;
+    private ObjectDetector objectDetector;
 
     MyObjectdetector () {
-//        localModel = new LocalModel.Builder()
-//                .setAssetFilePath("detectSample.tflite")
-//                .build();
-//
-//        // Live detection and tracking
-//        customObjectDetectorOptions = new CustomObjectDetectorOptions.Builder(localModel)
-//                        .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
-//                        .enableClassification()
-//                        .setClassificationConfidenceThreshold(0.5f)
-//                        .setMaxPerObjectLabelCount(3)
-//                        .build();
-//        objectDetector = ObjectDetection.getClient(customObjectDetectorOptions);
-
-        ObjectDetectorOptions.Builder builder = new ObjectDetectorOptions.Builder();
-        options = builder
-                .setDetectorMode(CustomObjectDetectorOptions.SINGLE_IMAGE_MODE)
-                .enableClassification()
-                .enableMultipleObjects()
+        localModel = new LocalModel.Builder()
+                .setAssetFilePath("lite-model_object_detection_mobile_object_labeler_v1_1.tflite")
                 .build();
-        detector = ObjectDetection.getClient(options);
+
+        // Live detection and tracking
+        customObjectDetectorOptions = new CustomObjectDetectorOptions.Builder(localModel)
+                        .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
+                        .enableClassification()
+                        .setClassificationConfidenceThreshold(0.5f)
+                        .setMaxPerObjectLabelCount(3)
+                        .build();
+        objectDetector = ObjectDetection.getClient(customObjectDetectorOptions);
     }
 
      public void getResults (InputImage image) {
-        detector
+        List<Recognition> recList = new ArrayList<Recognition>() {};
+       Log.d("asdf", "before processing");
+       objectDetector
                  .process(image)
                  .addOnFailureListener(e -> {
                      e.printStackTrace();
