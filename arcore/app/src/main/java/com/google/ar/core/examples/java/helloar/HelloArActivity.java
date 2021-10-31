@@ -155,6 +155,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16]; // projection x view x model
 
+  private MyObjectdetector myObjectdetector;
+  private YuvToRgbConverter yuvToRgbConverter;
+
+  public static Pair<Float, Float> coor;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -171,6 +176,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
+    myObjectdetector = new MyObjectdetector();
+    yuvToRgbConverter = new YuvToRgbConverter(this);
+    coor = null;
 
     installRequested = false;
 
@@ -631,16 +639,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     } finally {
       if (cameraImage != null) {
 //         convert image to inputImage
-        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
+//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
 
-        Log.d("asdf", "Start detector");
-        MyObjectdetector myObjectdetector = new MyObjectdetector();
-        List<Recognition> results = myObjectdetector.getResults(inputImage);
-        Log.d("asdf", results.toString());
-        for(Recognition r : results) {
-          Pair<Float, Float> coor = r.getCenterCoordinate();
-          calDistance(frame, camera, coor);
-        }
+        Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
+        yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
+
+        InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+
+        myObjectdetector.getResults(inputImage);
         cameraImage.close();
       }
     }
@@ -672,6 +678,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Handle one tap per frame.
 //    handleTap(frame, camera);
+    calDistance(frame, camera);
 
     // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
     trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
@@ -734,13 +741,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  private void calDistance(Frame frame, Camera camera, Pair<Float, Float> coor) {
-    if (camera.getTrackingState() == TrackingState.TRACKING) {
+  private void calDistance(Frame frame, Camera camera) {
+    if (coor != null) {
       List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
 
       for (HitResult hit : hitResultList) {
         textView.setText("distance is " + hit.getDistance() + " m");
       }
+      coor = null;
     }
   }
 
