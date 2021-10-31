@@ -1,6 +1,8 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
@@ -48,6 +50,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+import com.google.mlkit.vision.common.InputImage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -381,12 +384,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     } finally {
       if (cameraImage != null) {
         // TODO: Process `cameraImage` using your ML inference model.
-//        List<Recognition> results = MyObjectdetector.getResults(cameraImage);
+
+        // convert image to inputImage
+//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
+//
+//        List<Recognition> results = MyObjectdetector.getResults(inputImage);
 //        for(Recognition r : results) {
 //          Pair<Float, Float> coor = r.getCenterCoordinate();
 //          calDistance(frame, camera, coor);
 //        }
-        cameraImage.close();
+//        cameraImage.close();
       }
     }
 
