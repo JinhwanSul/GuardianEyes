@@ -56,6 +56,7 @@ public class MyObjectdetector {
                      for (DetectedObject detectedObject : results) {
                          Rect boundingBox = detectedObject.getBoundingBox();
 //                         Integer trackingId = detectedObject.getTrackingId();
+                         Log.d("ggg", "jeff list - " + detectedObject.getLabels().size());
                          for (DetectedObject.Label label : detectedObject.getLabels()) {
                              String text = label.getText();
                              Integer index = label.getIndex();
