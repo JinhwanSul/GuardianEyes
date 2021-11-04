@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ precision mediump float;
+ 
 layout(location = 0) out vec4 o_FragColor;
 
 void main() {
