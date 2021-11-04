@@ -64,7 +64,11 @@ public class MyObjectdetector {
                              Recognition recognition = new Recognition(index.toString(), text, confidence, rectFBoundingBox);
 
                              Log.d("asdf", recognition.toString());
-                             HelloArActivity.coor = recognition.getCenterCoordinate();
+                             Log.d("ggg", "jeff coord:"+recognition.getCenterCoordinate() + " rect:" + rectFBoundingBox + " title:" + recognition.getTitle());
+                             synchronized (HelloArActivity.obj) {
+                                 HelloArActivity.objRect = rectFBoundingBox;
+                                 HelloArActivity.coor = recognition.getCenterCoordinate();
+                             }
                          }
                      }
                  });

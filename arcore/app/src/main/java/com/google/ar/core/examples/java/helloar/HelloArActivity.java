@@ -4,6 +4,8 @@ package com.google.ar.core.examples.java.helloar;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.content.Intent;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.media.Image;
 import android.net.Uri;
 import android.opengl.GLES30;
@@ -69,6 +71,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -134,6 +138,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private final DepthSettings depthSettings = new DepthSettings();
 
+  // Box Shader
+  private VertexBuffer boxVertexBuffer;
+  private Mesh boxMesh;
+  private Shader boxShader;
+
   // Point Cloud
   private VertexBuffer pointCloudVertexBuffer;
   private Mesh pointCloudMesh;
@@ -158,6 +167,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private MyObjectdetector myObjectdetector;
   private YuvToRgbConverter yuvToRgbConverter;
 
+  public static Object obj = new Object();
+  public static RectF objRect = new RectF(0,0,0,0);
   public static Pair<Float, Float> coor;
 
   @Override
@@ -535,6 +546,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               buffer);
       GLError.maybeThrowGLException("Failed to populate DFG texture", "glTexImage2D");
 
+      //box shader
+      boxShader = Shader.createFromAssets(render,"shaders/box.vert","shaders/box.frag",null);
+      boxVertexBuffer = new VertexBuffer(render, 2, null);
+      final VertexBuffer[] boxVertexBuffers = {boxVertexBuffer};
+      boxMesh = new Mesh(render, Mesh.PrimitiveMode.LINE_LOOP, null, boxVertexBuffers);
+
       // Point cloud
       pointCloudShader =
               Shader.createFromAssets(
@@ -731,6 +748,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
       render.draw(pointCloudMesh, pointCloudShader);
     }
+    render.draw(boxMesh, boxShader);
 
     // Visualize planes.
     planeRenderer.drawPlanes(
@@ -742,13 +760,29 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
   private void calDistance(Frame frame, Camera camera) {
-    if (coor != null) {
-      List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
+    synchronized (HelloArActivity.obj){
+      if(coor != null) {
+        List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
 
-      for (HitResult hit : hitResultList) {
-        textView.setText("distance is " + hit.getDistance() + " m");
+        for (HitResult hit : hitResultList) {
+          textView.setText("distance is " + hit.getDistance() + " m");
+        }
+
+        RectF rect = HelloArActivity.objRect;
+        float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
+        float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
+        float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
+        float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
+
+        FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        test.put(new float[]{
+                left, top,
+                right, top,
+                right, bottom,
+                left, bottom});
+
+        boxVertexBuffer.set(test);
       }
-      coor = null;
     }
   }
 
