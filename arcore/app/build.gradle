@@ -39,11 +39,15 @@ dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'
-    implementation 'com.google.mlkit:vision-common:16.3.0'
+   // implementation 'com.google.mlkit:vision-common:16.3.0'
     // Object detection & tracking feature with custom bundled model
-    implementation 'com.google.mlkit:object-detection-custom:16.3.3'
+  //  implementation 'com.google.mlkit:object-detection-custom:16.3.3'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
-    implementation 'com.google.mlkit:object-detection:16.2.7'
+  //  implementation 'com.google.mlkit:object-detection:16.2.7'
+    // Tensorflow lite task library
+    implementation 'org.tensorflow:tensorflow-lite-task-vision:0.1.0'
+    implementation 'org.tensorflow:tensorflow-lite-task-text:0.1.0'
+    implementation project(path: ':lib_task_api')
 
     compile 'joda-time:joda-time:2.10.5'
     implementation "androidx.core:core-ktx:+"

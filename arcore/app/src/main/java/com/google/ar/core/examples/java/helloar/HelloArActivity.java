@@ -62,7 +62,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
-import com.google.mlkit.vision.common.InputImage;
+//import com.google.mlkit.vision.common.InputImage;
 
 
 import org.joda.time.DateTime;
@@ -164,7 +164,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16]; // projection x view x model
 
-  private MyObjectdetector myObjectdetector;
+  //private MyObjectdetector myObjectdetector;
+  private TFObjectDetector myObjectdetector;
   private YuvToRgbConverter yuvToRgbConverter;
 
   public static Object obj = new Object();
@@ -187,7 +188,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
-    myObjectdetector = new MyObjectdetector();
+    //myObjectdetector = new MyObjectdetector();
+    myObjectdetector = new TFObjectDetector(this);
     yuvToRgbConverter = new YuvToRgbConverter(this);
     coor = null;
 
@@ -659,11 +661,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 //        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
 
         Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
+        Log.d("Jinhwan", "width: "+cameraImage.getWidth()+", height: "+cameraImage.getHeight());
         yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
 
-        InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-
-        myObjectdetector.getResults(inputImage);
+        // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+        // myObjectdetector.getResults(inputImage);
+        myObjectdetector.getResults(bitmapImage);
         cameraImage.close();
       }
     }
