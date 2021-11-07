@@ -769,13 +769,48 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   final float inputSize = 300.0f;
 
   private void calDistance(Frame frame, float w, float h) {
-    if(coor != null) {
-      List<HitResult> hitResultList = frame.hitTest(coor.second/inputSize*h, coor.first/inputSize*w);
+    float minDistance = 10000.0f;
+    List<HitResult> hitResultList = frame.hitTest(0.5f*h, 0.5f*w);
 
-      for (HitResult hit : hitResultList) {
-        textView.setText("distance is " + hit.getDistance() + " m");
+    for (HitResult hit : hitResultList) {
+      if(hit.getDistance() < minDistance) {
+        minDistance = hit.getDistance();
       }
     }
+
+    hitResultList = frame.hitTest(0.45f*h, 0.5f*w);
+
+    for (HitResult hit : hitResultList) {
+      if(hit.getDistance() < minDistance) {
+        minDistance = hit.getDistance();
+      }
+    }
+
+    hitResultList = frame.hitTest(0.55f*h, 0.5f*w);
+
+    for (HitResult hit : hitResultList) {
+      if(hit.getDistance() < minDistance) {
+        minDistance = hit.getDistance();
+      }
+    }
+
+    hitResultList = frame.hitTest(0.5f*h, 0.55f*w);
+
+    for (HitResult hit : hitResultList) {
+      if(hit.getDistance() < minDistance) {
+        minDistance = hit.getDistance();
+      }
+    }
+
+    hitResultList = frame.hitTest(0.5f*h, 0.45f*w);
+
+    for (HitResult hit : hitResultList) {
+      if(hit.getDistance() < minDistance) {
+        minDistance = hit.getDistance();
+      }
+    }
+
+    textView.setText("distance is " + minDistance + " m");
   }
 
   private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
