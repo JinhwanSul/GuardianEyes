@@ -18,7 +18,7 @@ import java.util.List;
 
 public class TFObjectDetector {
 
-    private static final int TF_OD_API_INPUT_SIZE = 500;
+    private static final int TF_OD_API_INPUT_SIZE = 300;
     private static final boolean TF_OD_API_IS_QUANTIZED = true;
     private static final String TF_OD_API_MODEL_FILE = "detectSample.tflite";
     private static final String TF_OD_API_LABELS_FILE = "labelmap.txt";
@@ -75,9 +75,6 @@ public class TFObjectDetector {
                 if(rectFBoundingBox.bottom < 0.0f) {
                     rectFBoundingBox.bottom = 0.0f;
                 }
-                Log.d("asdf", rectFBoundingBox.top +" "+ rectFBoundingBox.bottom+" "+ rectFBoundingBox.left+" "+ rectFBoundingBox.right);
-                Log.d("asdf", recognition.toString());
-                Log.d("ggg", "jeff coord:"+recognition.getCenterCoordinate() + " rect:" + rectFBoundingBox + " title:" + recognition.getTitle());
             }
         }
 

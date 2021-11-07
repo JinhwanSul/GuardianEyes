@@ -343,7 +343,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   /** Checks the playback is in progress without issues. */
   private void checkPlaybackStatus() {
-    Log.d(TAG, "jeff "+session.getPlaybackStatus());
+    Log.d(TAG, "GuardianEyes "+session.getPlaybackStatus());
     if ((session.getPlaybackStatus() != PlaybackStatus.OK)
             && (session.getPlaybackStatus() != PlaybackStatus.FINISHED)) {
       setStateAndUpdateUI(AppState.IDLE);
@@ -351,7 +351,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   private void updateUI() {
-    Log.d(TAG, "jeff update UI:" + currentState.get());
+    Log.d(TAG, "GuardianEyes update UI:" + currentState.get());
     switch (currentState.get()) {
       case IDLE:
         startRecordingButton.setVisibility(View.VISIBLE);
@@ -751,8 +751,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
         // myObjectdetector.getResults(inputImage);
         List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
-        calDistance(frame, camera, result);
-        drawResultRects(render, result);
+        calDistance(frame, cameraImage.getWidth(), cameraImage.getHeight());
+        drawResultRects(frame, cameraImage.getWidth(), cameraImage.getHeight(), render, result);
         cameraImage.close();
       }
     }
@@ -766,40 +766,32 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  private void calDistance(Frame frame, Camera camera, List<Detector.Recognition> result) {
+  final float inputSize = 300.0f;
+
+  private void calDistance(Frame frame, float w, float h) {
     if(coor != null) {
-      List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
+      List<HitResult> hitResultList = frame.hitTest(coor.second/inputSize*h, coor.first/inputSize*w);
 
       for (HitResult hit : hitResultList) {
         textView.setText("distance is " + hit.getDistance() + " m");
       }
-
-//      RectF rect = HelloArActivity.objRect;
-//      float bottom = 2.0f * ((500.0f - rect.left) / 500.0f) - 1.0f;
-//      float top = 2.0f * ((500.0f - rect.right) / 500.0f) - 1.0f;
-//      float left = 2.0f * ((500.0f -rect.top) / 500.0f) - 1.0f;
-//      float right = 2.0f * ((500.0f - rect.bottom) / 500.0f) - 1.0f;
-//
-//      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-//      test.put(new float[]{
-//              left, top,
-//              right, top,
-//              right, bottom,
-//              left, bottom});
-//
-//      boxVertexBuffer.set(test);
     }
   }
 
-  private void drawResultRects(SampleRender render, List<Detector.Recognition> result) {
+  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
 
     for(final Detector.Recognition recog:result) {
       RectF rect = recog.getLocation();
-      Log.d(TAG, "jeff left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
-      float bottom = 2.0f * ((500.0f - rect.left) / 500.0f) - 1.0f;
-      float top = 2.0f * ((500.0f - rect.right) / 500.0f) - 1.0f;
-      float left = 2.0f * ((500.0f -rect.top) / 500.0f) - 1.0f;
-      float right = 2.0f * ((500.0f - rect.bottom) / 500.0f) - 1.0f;
+      Pair<Float, Float> coord = recog.getCenterCoordinate();
+      List<HitResult> hitResultList = frame.hitTest(coord.second/inputSize*h, coord.first/inputSize*w);
+      Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
+      for (HitResult hit : hitResultList) {
+        Log.d(TAG, "GuardianEyes distance is " + hit.getDistance() + " m");
+      }
+      float bottom = 2.0f * ((inputSize - rect.left) / inputSize) - 1.0f;
+      float top = 2.0f * ((inputSize - rect.right) / inputSize) - 1.0f;
+      float left = 2.0f * ((inputSize -rect.top) / inputSize) - 1.0f;
+      float right = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
 
       FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
       test.put(new float[]{
