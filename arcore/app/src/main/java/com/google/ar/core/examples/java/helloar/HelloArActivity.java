@@ -774,20 +774,20 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         textView.setText("distance is " + hit.getDistance() + " m");
       }
 
-      RectF rect = HelloArActivity.objRect;
-      float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
-      float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
-      float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
-      float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
-
-      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-      test.put(new float[]{
-              left, top,
-              right, top,
-              right, bottom,
-              left, bottom});
-
-      boxVertexBuffer.set(test);
+//      RectF rect = HelloArActivity.objRect;
+//      float bottom = 2.0f * ((500.0f - rect.left) / 500.0f) - 1.0f;
+//      float top = 2.0f * ((500.0f - rect.right) / 500.0f) - 1.0f;
+//      float left = 2.0f * ((500.0f -rect.top) / 500.0f) - 1.0f;
+//      float right = 2.0f * ((500.0f - rect.bottom) / 500.0f) - 1.0f;
+//
+//      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+//      test.put(new float[]{
+//              left, top,
+//              right, top,
+//              right, bottom,
+//              left, bottom});
+//
+//      boxVertexBuffer.set(test);
     }
   }
 
@@ -795,10 +795,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     for(final Detector.Recognition recog:result) {
       RectF rect = recog.getLocation();
-      float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
-      float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
-      float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
-      float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
+      Log.d(TAG, "jeff left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
+      float bottom = 2.0f * ((500.0f - rect.left) / 500.0f) - 1.0f;
+      float top = 2.0f * ((500.0f - rect.right) / 500.0f) - 1.0f;
+      float left = 2.0f * ((500.0f -rect.top) / 500.0f) - 1.0f;
+      float right = 2.0f * ((500.0f - rect.bottom) / 500.0f) - 1.0f;
 
       FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
       test.put(new float[]{
