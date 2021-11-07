@@ -764,8 +764,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
         // myObjectdetector.getResults(inputImage);
         List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
-        calDistance(frame, cameraImage.getWidth(), cameraImage.getHeight());
-        drawResultRects(frame, cameraImage.getWidth(), cameraImage.getHeight(), render, result);
+        calDistance(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
+        drawResultRects(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight(), render, result);
         cameraImage.close();
       }
     }
@@ -779,7 +779,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  final float inputSize = 300.0f;
+  final float inputSize = 500.0f;
 
   private void calDistance(Frame frame, float w, float h) {
     float minDistance = 10000.0f;
