@@ -7,3 +7,6 @@
 - 참고 링크:  
 https://codelabs.developers.google.com/tflite-object-detection-android#8  
 https://www.youtube.com/watch?v=sarZ_FZfDxs
+
+## Midterm presentation link
+https://docs.google.com/presentation/d/1MAk7BvqR4HZWOYEZu85BdtR31GxwC12R_6se4th3iEM/edit#slide=id.pv
