@@ -63,6 +63,7 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 //import com.google.mlkit.vision.common.InputImage;
+import org.tensorflow.lite.examples.detection.tflite.Detector;
 
 
 import org.joda.time.DateTime;
@@ -168,7 +169,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private TFObjectDetector myObjectdetector;
   private YuvToRgbConverter yuvToRgbConverter;
 
-  public static Object obj = new Object();
   public static RectF objRect = new RectF(0,0,0,0);
   public static Pair<Float, Float> coor;
 
@@ -643,33 +643,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
       return;
     }
+
     Camera camera = frame.getCamera();
 
-    Image cameraImage = null;
-    try {
-      cameraImage = frame.acquireCameraImage();
-    } catch (NotYetAvailableException e) {
-      // NotYetAvailableException is an exception that can be expected when the camera is not ready
-      // yet. The image may become available on a next frame.
-    } catch (RuntimeException e) {
-      // A different exception occurred, e.g. DeadlineExceededException, ResourceExhaustedException.
-      // Handle this error appropriately.
-      Log.e(TAG, "Runtime error from acquiring camera image", e);
-    } finally {
-      if (cameraImage != null) {
-//         convert image to inputImage
-//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
-
-        Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
-        Log.d("Jinhwan", "width: "+cameraImage.getWidth()+", height: "+cameraImage.getHeight());
-        yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
-
-        // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-        // myObjectdetector.getResults(inputImage);
-        myObjectdetector.getResults(bitmapImage);
-        cameraImage.close();
-      }
-    }
 
     // Update BackgroundRenderer state to match the depth settings.
     try {
@@ -698,7 +674,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Handle one tap per frame.
 //    handleTap(frame, camera);
-    calDistance(frame, camera);
+
 
     // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
     trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
@@ -751,7 +727,35 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
       render.draw(pointCloudMesh, pointCloudShader);
     }
-    render.draw(boxMesh, boxShader);
+    //render.draw(boxMesh, boxShader);
+
+    Image cameraImage = null;
+    try {
+      cameraImage = frame.acquireCameraImage();
+    } catch (NotYetAvailableException e) {
+      // NotYetAvailableException is an exception that can be expected when the camera is not ready
+      // yet. The image may become available on a next frame.
+    } catch (RuntimeException e) {
+      // A different exception occurred, e.g. DeadlineExceededException, ResourceExhaustedException.
+      // Handle this error appropriately.
+      Log.e(TAG, "Runtime error from acquiring camera image", e);
+    } finally {
+      if (cameraImage != null) {
+//         convert image to inputImage
+//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
+
+        Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
+        Log.d("Jinhwan", "width: "+cameraImage.getWidth()+", height: "+cameraImage.getHeight());
+        yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
+
+        // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
+        // myObjectdetector.getResults(inputImage);
+        List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
+        calDistance(frame, camera, result);
+        drawResultRects(render, result);
+        cameraImage.close();
+      }
+    }
 
     // Visualize planes.
     planeRenderer.drawPlanes(
@@ -762,30 +766,49 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  private void calDistance(Frame frame, Camera camera) {
-    synchronized (HelloArActivity.obj){
-      if(coor != null) {
-        List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
+  private void calDistance(Frame frame, Camera camera, List<Detector.Recognition> result) {
+    if(coor != null) {
+      List<HitResult> hitResultList = frame.hitTest(coor.first, coor.second);
 
-        for (HitResult hit : hitResultList) {
-          textView.setText("distance is " + hit.getDistance() + " m");
-        }
-
-        RectF rect = HelloArActivity.objRect;
-        float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
-        float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
-        float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
-        float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
-
-        FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        test.put(new float[]{
-                left, top,
-                right, top,
-                right, bottom,
-                left, bottom});
-
-        boxVertexBuffer.set(test);
+      for (HitResult hit : hitResultList) {
+        textView.setText("distance is " + hit.getDistance() + " m");
       }
+
+      RectF rect = HelloArActivity.objRect;
+      float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
+      float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
+      float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
+      float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
+
+      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+      test.put(new float[]{
+              left, top,
+              right, top,
+              right, bottom,
+              left, bottom});
+
+      boxVertexBuffer.set(test);
+    }
+  }
+
+  private void drawResultRects(SampleRender render, List<Detector.Recognition> result) {
+
+    for(final Detector.Recognition recog:result) {
+      RectF rect = recog.getLocation();
+      float bottom = 2.0f * ((640.0f - rect.left) / 640.0f) - 1.0f;
+      float top = 2.0f * ((640.0f - rect.right) / 640.0f) - 1.0f;
+      float left = 2.0f * ((480.0f -rect.top) / 480.0f) - 1.0f;
+      float right = 2.0f * ((480.0f - rect.bottom) / 480.0f) - 1.0f;
+
+      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+      test.put(new float[]{
+              left, top,
+              right, top,
+              right, bottom,
+              left, bottom});
+
+      boxVertexBuffer.set(test);
+      render.draw(boxMesh, boxShader);
     }
   }
 

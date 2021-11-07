@@ -42,7 +42,7 @@ public class TFObjectDetector {
         }
     }
 
-    public void getResults(Bitmap bitmap) {
+    public List<Detector.Recognition> getResults(Bitmap bitmap) {
 
         Bitmap croppedBitmap = Bitmap.createScaledBitmap(bitmap, TF_OD_API_INPUT_SIZE, TF_OD_API_INPUT_SIZE, true);
 
@@ -59,7 +59,6 @@ public class TFObjectDetector {
         for (final Detector.Recognition result : results) {
             final RectF location = result.getLocation();
             if (location != null && result.getConfidence() >= minimumConfidence) {
-                result.setLocation(location);
                 mappedRecognitions.add(result);
 
                 recognition = result;
@@ -83,10 +82,10 @@ public class TFObjectDetector {
         }
 
         if (recognition != null && rectFBoundingBox != null) {
-             synchronized (HelloArActivity.obj) {
-                HelloArActivity.objRect = rectFBoundingBox;
-                HelloArActivity.coor = recognition.getCenterCoordinate();
-            }
+            HelloArActivity.objRect = rectFBoundingBox;
+            HelloArActivity.coor = recognition.getCenterCoordinate();
         }
+
+        return mappedRecognitions;
     }
 }
