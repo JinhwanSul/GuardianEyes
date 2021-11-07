@@ -4,12 +4,16 @@ package com.google.ar.core.examples.java.helloar;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.content.Intent;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.Image;
 import android.net.Uri;
+import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
+import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.util.Log;
@@ -143,6 +147,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private VertexBuffer boxVertexBuffer;
   private Mesh boxMesh;
   private Shader boxShader;
+
+  private VertexBuffer boxTexVertexBuffer;
+  private Mesh boxTexMesh;
+  private Shader boxTexShader;
 
   // Point Cloud
   private VertexBuffer pointCloudVertexBuffer;
@@ -554,6 +562,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       final VertexBuffer[] boxVertexBuffers = {boxVertexBuffer};
       boxMesh = new Mesh(render, Mesh.PrimitiveMode.LINE_LOOP, null, boxVertexBuffers);
 
+      boxTexShader = Shader.createFromAssets(render, "shaders/boxTex.vert", "shaders/boxTex.frag", null);
+      boxTexVertexBuffer = new VertexBuffer(render, 4, null);
+      final VertexBuffer[] boxTexVertexBuffers = {boxTexVertexBuffer};
+      boxTexMesh = new Mesh(render, Mesh.PrimitiveMode.TRIANGLE_STRIP, null, boxTexVertexBuffers);
+
       // Point cloud
       pointCloudShader =
               Shader.createFromAssets(
@@ -813,6 +826,51 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     textView.setText("distance is " + minDistance + " m");
   }
 
+  private void drawText(SampleRender render, String str, float x, float y) {
+
+    Paint textPaint = new Paint();
+    textPaint.setTextSize(32);
+    textPaint.setAntiAlias(true);
+    textPaint.setARGB(0xff, 0xff, 0xff, 0xff);
+    textPaint.setTextAlign(Paint.Align.LEFT);
+//    textPaint.setTextScaleX(0.5f);
+    Rect rect = new Rect();
+    textPaint.getTextBounds(str, 0, str.length(), rect);
+
+    Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
+    Canvas canvas = new Canvas(bitmap);
+    bitmap.eraseColor(0);
+    canvas.drawText(str,rect.left,-rect.top,textPaint);
+
+    float width = (float)(rect.width())/480.0f;
+    float height = (float)(rect.height())/640.0f;
+
+    float left = x;
+    float top = y;
+    float right = x + width;
+    float bottom = y - height;
+
+    FloatBuffer test = ByteBuffer.allocateDirect(4 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    test.rewind();
+    test.put(new float[]{
+            left, top, 0.0f, 0.0f,
+            right, top, 1.0f, 0.0f,
+            left, bottom, 0.0f, 1.0f,
+            right, bottom, 1.0f, 1.0f
+    });
+    boxTexVertexBuffer.set(test);
+    Texture texture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE, false);
+    Log.d(TAG, "jeff bindTexture");
+    GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
+    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texture.getTextureId());
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR);
+    GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0);
+    boxTexShader.setTexture("u_Texture", texture);
+    render.draw(boxTexMesh, boxTexShader);
+    texture.close();
+  }
+
   private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
 
     for(final Detector.Recognition recog:result) {
@@ -820,8 +878,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Pair<Float, Float> coord = recog.getCenterCoordinate();
       List<HitResult> hitResultList = frame.hitTest(coord.second/inputSize*h, coord.first/inputSize*w);
       Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
+      float minDist = 10000.0f;
       for (HitResult hit : hitResultList) {
-        Log.d(TAG, "GuardianEyes distance is " + hit.getDistance() + " m");
+        if(hit.getDistance() < minDist) minDist = hit.getDistance();
       }
       float bottom = 2.0f * ((inputSize - rect.left) / inputSize) - 1.0f;
       float top = 2.0f * ((inputSize - rect.right) / inputSize) - 1.0f;
@@ -837,6 +896,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
+      drawText(render,recog.getTitle() + " " + minDist + "m", right, bottom);
     }
   }
 
