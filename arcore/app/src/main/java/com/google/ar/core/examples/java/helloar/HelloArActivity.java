@@ -1,6 +1,9 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.content.Intent;
@@ -303,6 +306,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         // permission on Android M and above, now is a good time to ask the user for it.
         if (!CameraPermissionHelper.hasCameraPermission(this)) {
           CameraPermissionHelper.requestCameraPermission(this);
+          return;
+        }
+
+        if (this.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+          this.requestPermissions(new String[] {WRITE_EXTERNAL_STORAGE}, 1);
           return;
         }
 
