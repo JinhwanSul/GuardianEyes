@@ -191,8 +191,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
     // Set up touch listener.
-    tapHelper = new TapHelper(/*context=*/ this);
-    surfaceView.setOnTouchListener(tapHelper);
+//    tapHelper = new TapHelper(/*context=*/ this);
+//    surfaceView.setOnTouchListener(tapHelper);
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -215,7 +215,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     startPlaybackButton.setOnClickListener(view -> startPlayback());
     stopPlaybackButton.setOnClickListener(view -> stopPlayback());
     recordingPlaybackPathTextView = findViewById(R.id.recording_playback_path);
+    surfaceView.setOnLongClickListener(view -> changeViewMode());
     updateUI();
+  }
+
+  private boolean changeViewMode() {
+    depthSettings.setDepthColorVisualizationEnabled(!depthSettings.depthColorVisualizationEnabled());
+    return true;
   }
 
   /** Performs action when playback button is clicked. */
@@ -724,22 +730,22 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // -- Draw non-occluded virtual objects (planes, point cloud)
 
     // Get projection matrix.
-    camera.getProjectionMatrix(projectionMatrix, 0, Z_NEAR, Z_FAR);
-
-    // Get camera matrix and draw.
-    camera.getViewMatrix(viewMatrix, 0);
-
-    // Visualize tracked points.
-    // Use try-with-resources to automatically release the point cloud.
-    try (PointCloud pointCloud = frame.acquirePointCloud()) {
-      if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
-        pointCloudVertexBuffer.set(pointCloud.getPoints());
-        lastPointCloudTimestamp = pointCloud.getTimestamp();
-      }
-      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-      pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
-      render.draw(pointCloudMesh, pointCloudShader);
-    }
+//    camera.getProjectionMatrix(projectionMatrix, 0, Z_NEAR, Z_FAR);
+//
+//    // Get camera matrix and draw.
+//    camera.getViewMatrix(viewMatrix, 0);
+//
+//    // Visualize tracked points.
+//    // Use try-with-resources to automatically release the point cloud.
+//    try (PointCloud pointCloud = frame.acquirePointCloud()) {
+//      if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
+//        pointCloudVertexBuffer.set(pointCloud.getPoints());
+//        lastPointCloudTimestamp = pointCloud.getTimestamp();
+//      }
+//      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+//      pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+//      render.draw(pointCloudMesh, pointCloudShader);
+//    }
     //render.draw(boxMesh, boxShader);
 
     Image cameraImage = null;
@@ -760,6 +766,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
         Log.d("Jinhwan", "width: "+cameraImage.getWidth()+", height: "+cameraImage.getHeight());
         yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
+
+        android.graphics.Matrix rotateMatrix = new android.graphics.Matrix();
+        rotateMatrix.postRotate(90);
+        bitmapImage = Bitmap.createBitmap(bitmapImage, 0, 0, bitmapImage.getWidth(), bitmapImage.getHeight(), rotateMatrix, false);
 
         // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
         // myObjectdetector.getResults(inputImage);
@@ -876,16 +886,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     for(final Detector.Recognition recog:result) {
       RectF rect = recog.getLocation();
       Pair<Float, Float> coord = recog.getCenterCoordinate();
-      List<HitResult> hitResultList = frame.hitTest(coord.second/inputSize*h, coord.first/inputSize*w);
+      List<HitResult> hitResultList = frame.hitTest(coord.first/inputSize*w, coord.second/inputSize*h);
       Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
       float minDist = 10000.0f;
       for (HitResult hit : hitResultList) {
         if(hit.getDistance() < minDist) minDist = hit.getDistance();
       }
-      float bottom = 2.0f * ((inputSize - rect.left) / inputSize) - 1.0f;
-      float top = 2.0f * ((inputSize - rect.right) / inputSize) - 1.0f;
-      float left = 2.0f * ((inputSize -rect.top) / inputSize) - 1.0f;
-      float right = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
+      float top = 2.0f * ((inputSize - rect.top) / inputSize) - 1.0f;
+      float bottom = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
+      float left = 2.0f * (rect.left / inputSize) - 1.0f;
+      float right = 2.0f * (rect.right / inputSize) - 1.0f;
 
       FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
       test.put(new float[]{
@@ -896,7 +906,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
-      drawText(render,recog.getTitle() + " " + minDist + "m", right, bottom);
+      drawText(render,recog.getTitle() + " " + minDist + "m", left, top);
     }
   }
 

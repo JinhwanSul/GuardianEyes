@@ -18,7 +18,7 @@ import java.util.List;
 
 public class TFObjectDetector {
 
-    private static final int TF_OD_API_INPUT_SIZE = 300;
+    private static final int TF_OD_API_INPUT_SIZE = 500;
     private static final boolean TF_OD_API_IS_QUANTIZED = true;
     private static final String TF_OD_API_MODEL_FILE = "detectSample.tflite";
     private static final String TF_OD_API_LABELS_FILE = "labelmap.txt";
