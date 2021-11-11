@@ -19,6 +19,8 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -137,6 +139,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Button stopRecordingButton;
   private Button startPlaybackButton;
   private Button stopPlaybackButton;
+  private Button exploreButton;
   private TextView recordingPlaybackPathTextView;
 
   private PlaneRenderer planeRenderer;
@@ -215,8 +218,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     startPlaybackButton = (Button)findViewById(R.id.playback_button);
     stopPlaybackButton = (Button)findViewById(R.id.close_playback_button);
+    exploreButton = (Button)findViewById(R.id.explore_button);
     startPlaybackButton.setOnClickListener(view -> startPlayback());
     stopPlaybackButton.setOnClickListener(view -> stopPlayback());
+    exploreButton.setOnClickListener(view -> exploreMP4());
     recordingPlaybackPathTextView = findViewById(R.id.recording_playback_path);
     surfaceView.setOnLongClickListener(view -> changeViewMode());
     updateUI();
@@ -225,6 +230,29 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private boolean changeViewMode() {
     depthSettings.setDepthColorVisualizationEnabled(!depthSettings.depthColorVisualizationEnabled());
     return true;
+  }
+
+  private void exploreMP4() {
+    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+    intent.addCategory(Intent.CATEGORY_OPENABLE);
+    intent.setType("video/mp4");
+    startActivityForResult(intent, 10);
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data){
+    super.onActivityResult(requestCode, resultCode, data);
+
+    if(requestCode==10){
+      if (resultCode==RESULT_OK) {
+        Log.d(TAG, "jeff inputStream check:" + ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0))));
+        playbackDatasetPath = ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0)));
+        Toast.makeText(HelloArActivity.this, "result ok!" + playbackDatasetPath, Toast.LENGTH_SHORT).show();
+        updateUI();
+      }else{
+        Toast.makeText(HelloArActivity.this, "result cancle!", Toast.LENGTH_SHORT).show();
+      }
+    }
   }
 
   /** Performs action when playback button is clicked. */
@@ -273,7 +301,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
     if (playbackDatasetPath != null) {
       try {
-        session.setPlaybackDatasetUri(Uri.fromFile(new File(playbackDatasetPath)));
+        File fileCheck = new File(playbackDatasetPath);
+        session.setPlaybackDatasetUri(Uri.fromFile(fileCheck));
       } catch (PlaybackFailedException e) {
         String errorMsg = "Failed to set playback MP4 dataset. " + e;
         Log.e(TAG, errorMsg, e);
@@ -384,6 +413,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         stopPlaybackButton.setEnabled(false);
         startPlaybackButton.setVisibility(View.VISIBLE);
         startPlaybackButton.setEnabled(playbackDatasetPath != null);
+        exploreButton.setVisibility(View.VISIBLE);
+        exploreButton.setEnabled(true);
         recordingPlaybackPathTextView.setText(
                 getResources()
                         .getString(
@@ -408,10 +439,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         startRecordingButton.setVisibility(View.INVISIBLE);
         stopRecordingButton.setVisibility(View.INVISIBLE);
         startPlaybackButton.setVisibility(View.INVISIBLE);
+        exploreButton.setVisibility(View.INVISIBLE);
         startRecordingButton.setEnabled(false);
         stopRecordingButton.setEnabled(false);
         stopPlaybackButton.setVisibility(View.VISIBLE);
         stopPlaybackButton.setEnabled(true);
+        exploreButton.setEnabled(false);
         recordingPlaybackPathTextView.setText("");
         break;
     }
@@ -878,7 +911,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     });
     boxTexVertexBuffer.set(test);
     Texture texture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE, false);
-    Log.d(TAG, "jeff bindTexture");
     GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
     GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texture.getTextureId());
     GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
@@ -891,6 +923,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
 
+    GLES30.glLineWidth(8.0f);
     for(final Detector.Recognition recog:result) {
       RectF rect = recog.getLocation();
       Pair<Float, Float> coord = recog.getCenterCoordinate();
@@ -916,6 +949,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       render.draw(boxMesh, boxShader);
       drawText(render,recog.getTitle() + " " + minDist + "m", left, top);
     }
+    GLES30.glLineWidth(1.0f);
   }
 
   /**

@@ -87,6 +87,22 @@
         android:enabled="false"/>
 
   </FrameLayout>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center">
+
+      <Button
+          android:id="@+id/explore_button"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:text="explore"
+          android:textSize="18sp"
+          android:textStyle="bold"
+          android:enabled="true"/>
+
+    </FrameLayout>
   </LinearLayout>
 
   <TextView
