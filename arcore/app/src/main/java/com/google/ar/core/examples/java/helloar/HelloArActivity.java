@@ -8,6 +8,7 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -29,6 +30,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -93,6 +95,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -912,6 +915,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
         calDistance(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
         drawResultRects(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight(), render, result);
+        checkWallOrHole(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
         cameraImage.close();
       }
     }
@@ -921,15 +925,51 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             render,
             session.getAllTrackables(Plane.class),
             camera.getDisplayOrientedPose(),
-            projectionMatrix);
+            projectionMatrix
+    );
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
   final float inputSize = 500.0f;
+  private float prevfirstHitTy = 0.0f;
+  private float prevLastHitTy = 0.0f;
+
+  private void checkWallOrHole(Frame frame, float w, float h) {
+    // Need adjustment
+    float coordinateX = 0.5f, coordinateY = 0.25f;
+    List<HitResult> hitResultList = frame.hitTest(coordinateX * w, coordinateY * h);
+    if(hitResultList.isEmpty()) {
+      return;
+    }
+
+    HitResult firstHit = hitResultList.get(0);
+    HitResult lastHit = hitResultList.get(hitResultList.size() - 1);
+
+    float firstY = firstHit.getHitPose().ty();
+    float lastY = lastHit.getHitPose().ty();
+//    textView.setText(trans[0] + " " + trans[1] + " " + trans[2]);
+//    Log.d("asdf", trans[0] + " " + trans[1] + " " + trans[2] + "\n" + coor[0] + " " + coor[1] + " " + coor[2]);
+
+    float threshold = 0.4f;
+    if(prevfirstHitTy != 0 && prevLastHitTy != 0) {
+      if(Math.abs(prevfirstHitTy - firstY) > threshold) { // Detect Wall
+        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        vi.vibrate(300);
+      }
+      if(Math.abs(prevLastHitTy - lastY) > threshold) { // Detect Hole
+        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        vi.vibrate(300);
+      }
+    }
+
+    prevfirstHitTy = firstY;
+    prevLastHitTy = lastY;
+//    return 0;
+  }
 
   private void calDistance(Frame frame, float w, float h) {
     float minDistance = 10000.0f;
-    List<HitResult> hitResultList = frame.hitTest(0.5f*h, 0.5f*w);
+    List<HitResult> hitResultList = frame.hitTest(0.5f*w, 0.5f*h);
 
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
@@ -937,7 +977,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    hitResultList = frame.hitTest(0.45f*h, 0.5f*w);
+    hitResultList = frame.hitTest(0.45f*w, 0.5f*h);
 
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
@@ -945,7 +985,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    hitResultList = frame.hitTest(0.55f*h, 0.5f*w);
+    hitResultList = frame.hitTest(0.55f*w, 0.5f*h);
 
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
@@ -953,7 +993,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    hitResultList = frame.hitTest(0.5f*h, 0.55f*w);
+    hitResultList = frame.hitTest(0.5f*w, 0.55f*h);
 
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
@@ -961,7 +1001,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    hitResultList = frame.hitTest(0.5f*h, 0.45f*w);
+    hitResultList = frame.hitTest(0.5f*w, 0.45f*h);
 
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
@@ -969,7 +1009,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    textView.setText("distance is " + minDistance + " m");
+//    textView.setText("distance is " + minDistance + " m");
   }
 
   private void drawText(SampleRender render, String str, float x, float y) {
