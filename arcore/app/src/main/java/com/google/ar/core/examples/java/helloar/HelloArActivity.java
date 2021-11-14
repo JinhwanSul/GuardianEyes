@@ -1,8 +1,13 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +25,9 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -80,12 +88,15 @@ import org.joda.time.DateTime;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -117,6 +128,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private static final String ANCHOR_TRACK_MIME_TYPE =
           "application/hello-recording-playback-anchor";
 
+  private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
+  public final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
+  private final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
+  private final String ARDUINO_ADDRESS = "E8:D8:84:00:DB:4E";
+  private final String ARDUINO_NAME = "ESP32_SuperSonic";
+  private static final UUID BT_MODULE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // "random" unique identifier
+
   private final AtomicReference<AppState> currentState = new AtomicReference<>(AppState.IDLE);
 
   private String playbackDatasetPath;
@@ -125,6 +143,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
   private TextView textView;
+  private TextView arduinoTextView;
 
   private boolean installRequested;
 
@@ -186,6 +205,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   public static RectF objRect = new RectF(0,0,0,0);
   public static Pair<Float, Float> coor;
 
+  private Handler mHandler; // Our main handler that will receive callback notifications
+
+  private BluetoothAdapter mBTAdapter;
+  private Set<BluetoothDevice> mPairedDevices;
+  private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
+  private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
+
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -194,6 +221,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     textView = findViewById(R.id.text_view);
+    arduinoTextView = findViewById(R.id.arduioTextView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
     // Set up touch listener.
@@ -224,6 +252,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     exploreButton.setOnClickListener(view -> exploreMP4());
     recordingPlaybackPathTextView = findViewById(R.id.recording_playback_path);
     surfaceView.setOnLongClickListener(view -> changeViewMode());
+
+    mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
+
     updateUI();
   }
 
@@ -349,6 +380,71 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           // Dataset playback will start when session.resume() is called.
           setPlaybackDatasetPath();
         }
+
+        mHandler = new Handler(Looper.getMainLooper()){
+          @Override
+          public void handleMessage(Message msg){
+            if(msg.what == MESSAGE_READ){
+              String readMessage = null;
+              try {
+                readMessage = new String((byte[]) msg.obj, "UTF-8");
+              } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+              }
+              arduinoTextView.setText(readMessage);
+            }
+
+            if(msg.what == CONNECTING_STATUS){
+              if(msg.arg1 == 1)
+                arduinoTextView.setText("Connected to Device: " + msg.obj);
+              else
+                arduinoTextView.setText("Connection Failed");
+            }
+          }
+        };
+
+        new Thread()
+        {
+          @Override
+          public void run() {
+            boolean fail = false;
+            mPairedDevices = mBTAdapter.getBondedDevices();
+
+            for (BluetoothDevice device : mPairedDevices) {
+              if (device.getName().equals(ARDUINO_NAME)) {
+                try {
+                  mBTSocket = createBluetoothSocket(device);
+                } catch (IOException e) {
+                  fail = true;
+                  Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                }
+                // Establish the Bluetooth socket connection.
+                try {
+                  mBTSocket.connect();
+                } catch (IOException e) {
+                  try {
+                    fail = true;
+                    Log.d("jinhwan", e.toString());
+                    mBTSocket.close();
+                    mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
+                            .sendToTarget();
+                  } catch (IOException e2) {
+                    //insert code to deal with this
+                    Toast.makeText(getBaseContext(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                  }
+                }
+                if(!fail) {
+                  mConnectedThread = new ConnectedThread(mBTSocket, mHandler);
+                  mConnectedThread.start();
+                  mHandler.obtainMessage(CONNECTING_STATUS, 1, -1, ARDUINO_NAME)
+                          .sendToTarget();
+                }
+                break;
+              }
+            }
+          }
+        }.start();
+
       } catch (UnavailableArcoreNotInstalledException
               | UnavailableUserDeclinedInstallationException e) {
         message = "Please install ARCore";
@@ -805,7 +901,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 //        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
 
         Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
-        Log.d("Jinhwan", "width: "+cameraImage.getWidth()+", height: "+cameraImage.getHeight());
         yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
 
         android.graphics.Matrix rotateMatrix = new android.graphics.Matrix();
@@ -993,5 +1088,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         }
       }
     }
+  }
+
+  private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
+    try {
+      final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
+      return (BluetoothSocket) m.invoke(device, BT_MODULE_UUID);
+    } catch (Exception e) {
+      Log.e(TAG, "Could not create Insecure RFComm Connection",e);
+    }
+    return  device.createRfcommSocketToServiceRecord(BT_MODULE_UUID);
   }
 }

@@ -18,7 +18,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.google.ar.core.examples.java.helloar">
 
+  <uses-permission android:name="android.permission.BLUETOOTH" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
   <uses-permission android:name="android.permission.CAMERA"/>
+
+  <permission android:name="android.permission.BLUETOOTH" android:label="BLUETOOTH" />
+  <permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
   <!-- Limits app visibility in the Google Play Store to ARCore supported devices
        (https://developers.google.com/ar/devices). -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>

@@ -23,17 +23,17 @@
       android:id="@+id/surfaceview"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent"
-      android:layout_gravity="top"/>
+      android:layout_gravity="top" />
 
   <TextView
       android:id="@+id/text_view"
-      android:background="#000"
-      android:textColor="#FFF"
-      android:text="distance is 0m"
-      android:gravity="center"
-      android:textSize="18sp"
       android:layout_width="match_parent"
-      android:layout_height="wrap_content" />
+      android:layout_height="wrap_content"
+      android:background="#000"
+      android:gravity="center"
+      android:text="distance is 0m"
+      android:textColor="#FFF"
+      android:textSize="18sp" />
 
   <LinearLayout
       android:id="@+id/buttons_panel"
@@ -123,7 +123,19 @@
       android:padding="10dp"
       android:layout_alignParentEnd="true"/>
 
-<!--  <Button-->
+  <TextView
+      android:id="@+id/arduioTextView"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_below="@+id/text_view"
+      android:layout_marginTop="2dp"
+      android:background="#155"
+      android:gravity="center"
+      android:text="SuperSonic: "
+      android:textColor="#FFF"
+      android:textSize="18sp" />
+
+  <!--  <Button-->
 <!--      android:id="@+id/buttonForRecord"-->
 <!--      android:layout_width="wrap_content"-->
 <!--      android:layout_height="wrap_content"-->
