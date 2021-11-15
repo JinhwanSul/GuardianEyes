@@ -87,7 +87,9 @@ import org.tensorflow.lite.examples.detection.tflite.Detector;
 
 import org.joda.time.DateTime;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -95,7 +97,9 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -630,6 +634,23 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   @Override
   public void onPause() {
     super.onPause();
+
+    String path = getFilesDir().getAbsolutePath();
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    File firstYFile = new File(path + "/first" + timeStamp);
+    File lastYFile = new File(path + "/last" + timeStamp);
+
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(firstYFile));
+      writer.write(firstStr);
+      writer.close();
+      writer = new BufferedWriter(new FileWriter(lastYFile));
+      writer.write(lastStr);
+      writer.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     if (session != null) {
       displayRotationHelper.onPause();
       surfaceView.onPause();
@@ -931,8 +952,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
   final float inputSize = 500.0f;
-  private float prevfirstHitTy = 0.0f;
-  private float prevLastHitTy = 0.0f;
+//  private float prevfirstHitTy = 0.0f;
+//  private float prevLastHitTy = 0.0f;
+  String firstStr = "";
+  String lastStr = "";
+
 
   private void checkWallOrHole(Frame frame, float w, float h) {
     // Need adjustment
@@ -947,23 +971,26 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     float firstY = firstHit.getHitPose().ty();
     float lastY = lastHit.getHitPose().ty();
+
+    firstStr += "\n" + Float.toString(firstY);
+    lastStr += "\n" + Float.toString(lastY);
 //    textView.setText(trans[0] + " " + trans[1] + " " + trans[2]);
 //    Log.d("asdf", trans[0] + " " + trans[1] + " " + trans[2] + "\n" + coor[0] + " " + coor[1] + " " + coor[2]);
 
-    float threshold = 0.4f;
-    if(prevfirstHitTy != 0 && prevLastHitTy != 0) {
-      if(Math.abs(prevfirstHitTy - firstY) > threshold) { // Detect Wall
-        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        vi.vibrate(300);
-      }
-      if(Math.abs(prevLastHitTy - lastY) > threshold) { // Detect Hole
-        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        vi.vibrate(300);
-      }
-    }
+//    float threshold = 0.4f;
+//    if(prevfirstHitTy != 0 && prevLastHitTy != 0) {
+//      if(Math.abs(prevfirstHitTy - firstY) > threshold) { // Detect Wall
+//        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+//        vi.vibrate(300);
+//      }
+//      if(Math.abs(prevLastHitTy - lastY) > threshold) { // Detect Hole
+//        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+//        vi.vibrate(300);
+//      }
+//    }
 
-    prevfirstHitTy = firstY;
-    prevLastHitTy = lastY;
+//    prevfirstHitTy = firstY;
+//    prevLastHitTy = lastY;
 //    return 0;
   }
 
@@ -1009,7 +1036,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-//    textView.setText("distance is " + minDistance + " m");
+    textView.setText("distance is " + minDistance + " m");
   }
 
   private void drawText(SampleRender render, String str, float x, float y) {
