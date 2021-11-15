@@ -1009,7 +1009,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-//    textView.setText("distance is " + minDistance + " m");
+    textView.setText("distance is " + minDistance + " m");
   }
 
   private void drawText(SampleRender render, String str, float x, float y) {
