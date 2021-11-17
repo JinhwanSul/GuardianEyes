@@ -1,1 +1,1 @@
-include ':app', ':lib_task_api'
+include ':app', ':lib_task_api', ':opencv'

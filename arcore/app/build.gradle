@@ -12,6 +12,11 @@ android {
         targetSdkVersion 31
         versionCode 1
         versionName '1.0'
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -26,6 +31,12 @@ android {
     aaptOptions {
         noCompress "tflite"
         // or noCompress "lite"
+    }
+    ndkVersion "23.1.7779620"
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/java/com/google/ar/core/examples/java/helloar/jni/Android.mk'
+        }
     }
 }
 
@@ -48,6 +59,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-task-vision:0.1.0'
     implementation 'org.tensorflow:tensorflow-lite-task-text:0.1.0'
     implementation project(path: ':lib_task_api')
+    implementation project(path: ':opencv')
 
     compile 'joda-time:joda-time:2.10.5'
     implementation "androidx.core:core-ktx:+"

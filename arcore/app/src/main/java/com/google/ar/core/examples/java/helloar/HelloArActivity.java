@@ -111,6 +111,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     PLAYBACK
   }
 
+  static {
+    System.loadLibrary("opencv_java4");
+    System.loadLibrary("native-lib");
+  }
+
   // Randomly generated UUID and custom MIME type to mark the anchor track for this sample.
   private static final UUID ANCHOR_TRACK_ID =
           UUID.fromString("a65e59fc-2e13-4607-b514-35302121c138");
