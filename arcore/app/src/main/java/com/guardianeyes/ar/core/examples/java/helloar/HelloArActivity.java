@@ -3,6 +3,9 @@ package com.guardianeyes.ar.core.examples.java.helloar;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
+import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.CURTAIN_HEAVY;
+import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.PLASTER_SMOOTH;
+
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.content.Intent;
@@ -38,6 +41,7 @@ import com.google.ar.core.Session;
 import com.google.ar.core.Track;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
+import com.google.vr.sdk.audio.GvrAudioEngine;
 import com.guardianeyes.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.guardianeyes.ar.core.examples.java.common.helpers.DepthSettings;
 import com.guardianeyes.ar.core.examples.java.common.helpers.DisplayRotationHelper;
@@ -177,6 +181,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private TFObjectDetector myObjectdetector;
   private YuvToRgbConverter yuvToRgbConverter;
 
+  //3D sound module
+  private GvrAudioEngine mGvrAudioEngine;
+  private String SOUND_FILE = "test.wav";
   public static RectF objRect = new RectF(0,0,0,0);
   public static Pair<Float, Float> coor;
 
@@ -195,6 +202,18 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Set up touch listener.
     // tapHelper = new TapHelper(/*context=*/ this);
     // surfaceView.setOnTouchListener(tapHelper);
+    mGvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+    new Thread(
+            new Runnable() {
+              @Override
+              public void run() {
+                mGvrAudioEngine.preloadSoundFile(SOUND_FILE);
+                //set room properties >> plaster_smooth
+                mGvrAudioEngine.setRoomProperties(15, 15, 15, PLASTER_SMOOTH, PLASTER_SMOOTH, CURTAIN_HEAVY);
+              }
+            }
+
+    ).start();
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -386,6 +405,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
     surfaceView.onResume();
     displayRotationHelper.onResume();
+    mGvrAudioEngine.resume();
   }
 
   /** Checks the playback is in progress without issues. */
@@ -531,9 +551,19 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       displayRotationHelper.onPause();
       surfaceView.onPause();
       session.pause();
+      mGvrAudioEngine.pause();
     }
   }
-
+  /*
+  this is sound module, what function take this module?
+  int soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
+  float[] translation = new float[3];
+  hit.getHitPose().getTranslation(translation, 0);
+  mGvrAudioEngine.setSoundObjectPosition(soundId, translation[0], translation[1], translation[2]);
+  mGvrAudioEngine.playSound(soundId, true); //loop playback
+  mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC, 0, 4);
+  mSounds.add(soundId);
+   */
   @Override
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
     super.onRequestPermissionsResult(requestCode, permissions, results);
