@@ -6,8 +6,6 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -19,9 +17,6 @@ android {
         }
     }
 
-    aaptOptions {
-        noCompress "tflite"
-    }
 
     lintOptions {
         checkReleaseBuilds false
@@ -33,6 +28,9 @@ android {
     compileOptions {
         sourceCompatibility 1.8
         targetCompatibility 1.8
+    }
+    androidResources {
+        noCompress 'tflite'
     }
 }
 
