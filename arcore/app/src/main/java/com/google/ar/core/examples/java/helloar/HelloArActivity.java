@@ -3,6 +3,8 @@ package com.google.ar.core.examples.java.helloar;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
+import static com.google.ar.core.examples.java.helloar.Process.*;
+
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

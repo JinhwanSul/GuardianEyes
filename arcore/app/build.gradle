@@ -28,15 +28,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    aaptOptions {
-        noCompress "tflite"
-        // or noCompress "lite"
-    }
     ndkVersion "23.1.7779620"
     externalNativeBuild {
         ndkBuild {
             path 'src/main/java/com/google/ar/core/examples/java/helloar/jni/Android.mk'
         }
+    }
+    androidResources {
+        noCompress 'tflite'
     }
 }
 
@@ -61,7 +60,7 @@ dependencies {
     implementation project(path: ':lib_task_api')
     implementation project(path: ':opencv')
 
-    compile 'joda-time:joda-time:2.10.5'
+    implementation 'joda-time:joda-time:2.10.5'
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
