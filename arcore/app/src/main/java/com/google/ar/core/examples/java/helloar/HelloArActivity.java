@@ -654,6 +654,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    dataString = new String[pointsX.length];
   }
 
   @Override
@@ -978,14 +980,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Trackable trackable = hit.getTrackable();
       // If a plane was hit, check that it was hit inside the plane polygon.
       // DepthPoints are only returned if Config.DepthMode is set to AUTOMATIC.
-      if ((trackable instanceof Plane
-              && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
-              && (PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose()) > 0))
-              || (trackable instanceof Point
-              && ((Point) trackable).getOrientationMode()
-              == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
-              || (trackable instanceof InstantPlacementPoint)
-              || (trackable instanceof DepthPoint))
+//      if ((trackable instanceof Plane
+//              && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
+//              && (PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose()) > 0))
+//              || (trackable instanceof Point
+//              && ((Point) trackable).getOrientationMode()
+//              == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
+//              || (trackable instanceof InstantPlacementPoint)
+//              || (trackable instanceof DepthPoint))
+      if(trackable instanceof DepthPoint)
       {
         if(num == 0) textView.setText(hit.getHitPose().ty() + "m");
 
