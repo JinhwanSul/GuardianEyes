@@ -12,15 +12,20 @@ def main(argv):
         return
     
     data = []
+    _min = 10000
+    _max = -10000
 
     with open(FLAGS.name, newline='') as f:
         rows = csv.reader(f)
         for row in rows:
+            for d in row:
+                _min = min(_min, float(d))
+                _max = max(_max, float(d))
             data.append(row)
 
     for i in range(len(data[0])):
         plt.plot([float(row[i]) for row in data], 'o', markersize=2, label=str(i))
-    plt.ylim([-5, 2])
+    plt.ylim([_min - 1, _max + 1])
     plt.ylabel('y-coordinate(m)')
     plt.xlabel('frame')
     plt.legend()
