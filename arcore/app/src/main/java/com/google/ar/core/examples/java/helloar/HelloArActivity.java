@@ -3,8 +3,6 @@ package com.google.ar.core.examples.java.helloar;
 
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-import static com.google.ar.core.examples.java.helloar.Process.*;
-
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -85,6 +83,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -824,6 +823,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
         calDistance(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
         drawResultRects(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight(), render, result);
+
         cameraImage.close();
       }
     }
@@ -928,25 +928,52 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     texture.close();
   }
 
-  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
+  private TrackingResult objectTracking(List<Detector.Recognition> result) {
+    Process.initializeData();
+    for(final Detector.Recognition rec : result) {
+      RectF rect = rec.getLocation();
+      Process.setData(rec.getTitle(), rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+    }
 
+    Process.Sort();
+
+    TrackingResult trackingResult = new TrackingResult();
+    for(int i = 0; ; ++i) {
+      float[] res = Process.getData(i);
+      String title = Process.getTrackingTitle(i);
+
+      if(res == null) break; // end of data
+
+      trackingResult.boxResults.add(res);
+      trackingResult.titles.add(title);
+    }
+
+    return trackingResult;
+  }
+
+  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
     GLES30.glLineWidth(8.0f);
-    for(final Detector.Recognition recog:result) {
-      RectF rect = recog.getLocation();
-      Pair<Float, Float> coord = recog.getCenterCoordinate();
-      List<HitResult> hitResultList = frame.hitTest(coord.first/inputSize*w, coord.second/inputSize*h);
-      Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
+    TrackingResult trackingResults = objectTracking(result);
+
+    for(int i = 0; i < trackingResults.size(); ++i) {
+      float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
+      String title = trackingResults.titles.get(i);
+      int id = (int) box[4];
+
+      float centerX = box[0] + box[2] / 2;
+      float centerY = box[1] + box[3] / 2;
+      List<HitResult> hitResultList = frame.hitTest(centerX / inputSize * w, centerY / inputSize * h);
+
       float minDist = 10000.0f;
-      for (HitResult hit : hitResultList) {
-        if(hit.getDistance() < minDist) minDist = hit.getDistance();
-      }
-      float top = 2.0f * ((inputSize - rect.top) / inputSize) - 1.0f;
-      float bottom = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
-      float left = 2.0f * (rect.left / inputSize) - 1.0f;
-      float right = 2.0f * (rect.right / inputSize) - 1.0f;
+      if(!hitResultList.isEmpty()) minDist = hitResultList.get(0).getDistance();
+
+      float top = 2.0f * ((inputSize - box[1]) / inputSize) - 1.0f;
+      float bottom = 2.0f * ((inputSize - (box[1] + box[3])) / inputSize) - 1.0f;
+      float left = 2.0f * (box[0] / inputSize) - 1.0f;
+      float right = 2.0f * ((box[0] + box[2]) / inputSize) - 1.0f;
 
       FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-      test.put(new float[]{
+      test.put(new float[] {
               left, top,
               right, top,
               right, bottom,
@@ -954,7 +981,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
-      drawText(render,recog.getTitle() + " " + minDist + "m", left, top);
+      drawText(render,"[" + id + "] " + title + " " + minDist + "m", left, top);
     }
     GLES30.glLineWidth(1.0f);
   }
