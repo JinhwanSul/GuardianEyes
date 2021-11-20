@@ -183,8 +183,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   //3D sound module
   private GvrAudioEngine mGvrAudioEngine;
-  private String SOUND_FILE = "test.wav";
-  public static RectF objRect = new RectF(0,0,0,0);
+  private String SOUND_FILE = "Sample.wav";
+  public static RectF objRect = new RectF(0, 0, 0, 0);
   public static Pair<Float, Float> coor;
 
 
@@ -226,14 +226,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     depthSettings.onCreate(this);
 
-    startRecordingButton = (Button)findViewById(R.id.start_recording_button);
-    stopRecordingButton = (Button)findViewById(R.id.stop_recording_button);
+    startRecordingButton = (Button) findViewById(R.id.start_recording_button);
+    stopRecordingButton = (Button) findViewById(R.id.stop_recording_button);
     startRecordingButton.setOnClickListener(view -> startRecording());
     stopRecordingButton.setOnClickListener(view -> stopRecording());
 
-    startPlaybackButton = (Button)findViewById(R.id.playback_button);
-    stopPlaybackButton = (Button)findViewById(R.id.close_playback_button);
-    exploreButton = (Button)findViewById(R.id.explore_button);
+    startPlaybackButton = (Button) findViewById(R.id.playback_button);
+    stopPlaybackButton = (Button) findViewById(R.id.close_playback_button);
+    exploreButton = (Button) findViewById(R.id.explore_button);
     startPlaybackButton.setOnClickListener(view -> startPlayback());
     stopPlaybackButton.setOnClickListener(view -> stopPlayback());
     exploreButton.setOnClickListener(view -> exploreMP4());
@@ -255,22 +255,24 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data){
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
 
-    if(requestCode==10){
-      if (resultCode==RESULT_OK) {
+    if (requestCode == 10) {
+      if (resultCode == RESULT_OK) {
         Log.d(TAG, "jeff inputStream check:" + ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0))));
         playbackDatasetPath = ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0)));
         Toast.makeText(HelloArActivity.this, "result ok!" + playbackDatasetPath, Toast.LENGTH_SHORT).show();
         updateUI();
-      }else{
+      } else {
         Toast.makeText(HelloArActivity.this, "result cancle!", Toast.LENGTH_SHORT).show();
       }
     }
   }
 
-  /** Performs action when playback button is clicked. */
+  /**
+   * Performs action when playback button is clicked.
+   */
   private void startPlayback() {
     if (playbackDatasetPath == null) {
       return;
@@ -279,7 +281,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     restartActivityWithIntentExtras();
   }
 
-  /** Performs action when close_playback button is clicked. */
+  /**
+   * Performs action when close_playback button is clicked.
+   */
   private void stopPlayback() {
     currentState.set(AppState.IDLE);
     restartActivityWithIntentExtras();
@@ -354,7 +358,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         }
 
         if (this.checkSelfPermission(WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-          this.requestPermissions(new String[] {WRITE_EXTERNAL_STORAGE}, 1);
+          this.requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE}, 1);
           return;
         }
 
@@ -408,9 +412,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     mGvrAudioEngine.resume();
   }
 
-  /** Checks the playback is in progress without issues. */
+  /**
+   * Checks the playback is in progress without issues.
+   */
   private void checkPlaybackStatus() {
-    Log.d(TAG, "GuardianEyes "+session.getPlaybackStatus());
+    Log.d(TAG, "GuardianEyes " + session.getPlaybackStatus());
     if ((session.getPlaybackStatus() != PlaybackStatus.OK)
             && (session.getPlaybackStatus() != PlaybackStatus.FINISHED)) {
       setStateAndUpdateUI(AppState.IDLE);
@@ -466,7 +472,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
   }
 
-  /** Generates a new MP4 dataset filename based on the current system time. */
+  /**
+   * Generates a new MP4 dataset filename based on the current system time.
+   */
   private static String getNewMp4DatasetFilename() {
     return String.format(
             Locale.ENGLISH,
@@ -474,7 +482,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             DateTime.now().toString(MP4_DATASET_TIMESTAMP_FORMAT));
   }
 
-  /** Generates a new MP4 dataset path based on the current system time. */
+  /**
+   * Generates a new MP4 dataset path based on the current system time.
+   */
   private String getNewDatasetPath() {
     File baseDir = this.getExternalFilesDir(null);
     if (baseDir == null) {
@@ -483,7 +493,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     return new File(this.getExternalFilesDir(null), getNewMp4DatasetFilename()).getAbsolutePath();
   }
 
-  /** Performs action when start_recording button is clicked. */
+  /**
+   * Performs action when start_recording button is clicked.
+   */
   private void startRecording() {
     try {
       lastRecordingDatasetPath = getNewDatasetPath();
@@ -514,7 +526,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setStateAndUpdateUI(AppState.RECORDING);
   }
 
-  /** Performs action when stop_recording button is clicked. */
+  /**
+   * Performs action when stop_recording button is clicked.
+   */
   private void stopRecording() {
     try {
       session.stopRecording();
@@ -554,16 +568,18 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       mGvrAudioEngine.pause();
     }
   }
-  /*
-  this is sound module, what function take this module?
-  int soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
-  float[] translation = new float[3];
-  hit.getHitPose().getTranslation(translation, 0);
-  mGvrAudioEngine.setSoundObjectPosition(soundId, translation[0], translation[1], translation[2]);
-  mGvrAudioEngine.playSound(soundId, true); //loop playback
-  mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC, 0, 4);
-  mSounds.add(soundId);
-   */
+
+  public void make3Dsound(float[] translation){
+
+  //this is sound module, what function take this module?
+    int soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
+
+    //getTranslation(translation, 0);
+    mGvrAudioEngine.setSoundObjectPosition(soundId,translation[0],translation[1],translation[2]);
+    mGvrAudioEngine.playSound(soundId,false); //loop playback
+    mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId,GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
+    //mSounds.add(soundId);
+  }
   @Override
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
     super.onRequestPermissionsResult(requestCode, permissions, results);
@@ -893,10 +909,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
 
     hitResultList = frame.hitTest(0.5f*h, 0.45f*w);
-
+    HitResult temp = hitResultList.get(0);
     for (HitResult hit : hitResultList) {
       if(hit.getDistance() < minDistance) {
         minDistance = hit.getDistance();
+        temp = hit;
       }
     }
     /*
@@ -908,6 +925,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       ringtone.play();
     }
     */
+    if(minDistance < 0.7f){
+      float[] translation = new float[3];
+      temp.getHitPose().getTranslation(translation,0);
+      make3Dsound(translation);
+    }
     textView.setText("distance is " + minDistance + " m");
   }
 
