@@ -3,7 +3,7 @@ include $(CLEAR_VARS)
 
 #opencv library
 #TODO: Should change OPENCVROOT to your own path
-OPENCVROOT:=/Users/igyeongjun/Projects/GuardianEyes/arcore/opencv
+OPENCVROOT:=${LOCAL_PATH}/../../../../../../../../../../../../opencv
 OPENCV_CAMERA_MODULES:=on
 OPENCV_INSTALL_MODULES:=on
 OPENCV_LIB_TYPE:=SHARED
