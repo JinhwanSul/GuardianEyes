@@ -6,6 +6,7 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -22,6 +23,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -41,6 +43,7 @@ import com.google.ar.core.InstantPlacementPoint;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PlaybackStatus;
 import com.google.ar.core.Point;
+import com.google.ar.core.Pose;
 import com.google.ar.core.RecordingConfig;
 import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
@@ -142,6 +145,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
   private TextView textView;
+  private TextView avgHeightTextView;
   private TextView arduinoTextView;
 
   private boolean installRequested;
@@ -219,6 +223,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     textView = findViewById(R.id.text_view);
+    avgHeightTextView = findViewById(R.id.avg_height_text_view);
     arduinoTextView = findViewById(R.id.arduioTextView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
@@ -968,6 +973,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   float[] pointsX = {0.50f, 0.50f};
   float[] pointsY = {0.50f, 0.75f};
   private String[] dataString = new String[pointsX.length];
+  float avgHeight = 0, threshold = 0.2f;
+  int frameCount = 30, curFrame = 0, discardFrame = 30;
 
   private void checkWallOrHole(Frame frame, Camera camera, int num) {
     // Need adjustment
@@ -978,25 +985,40 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     for(HitResult hit : hitResultList) {
       Trackable trackable = hit.getTrackable();
-      // If a plane was hit, check that it was hit inside the plane polygon.
-      // DepthPoints are only returned if Config.DepthMode is set to AUTOMATIC.
-//      if ((trackable instanceof Plane
-//              && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
-//              && (PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose()) > 0))
-//              || (trackable instanceof Point
-//              && ((Point) trackable).getOrientationMode()
-//              == Point.OrientationMode.ESTIMATED_SURFACE_NORMAL)
-//              || (trackable instanceof InstantPlacementPoint)
-//              || (trackable instanceof DepthPoint))
+
       if(trackable instanceof DepthPoint)
       {
-        if(num == 0) textView.setText(hit.getHitPose().ty() + "m");
+        float res = hit.getHitPose().ty() - camera.getPose().ty();
 
-        if(flag) {
-          if(dataString[num] == null) {
-            dataString[num] = Float.toString(hit.getHitPose().ty());
-          } else {
-            dataString[num] += "\n" + hit.getHitPose().ty();
+        if(curFrame < discardFrame) {
+          curFrame++;
+        }
+        else if(curFrame - discardFrame < frameCount) {
+          int frameNum = curFrame - discardFrame;
+          avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
+          curFrame++;
+
+          avgHeightTextView.setText("Average height : " + avgHeight + "m");
+        }
+        else {
+          if(num == 0) textView.setText("Height difference : " + res + "m");
+
+//          if(flag) {
+//            if(dataString[num] == null) {
+//              dataString[num] = Float.toString(res);
+//            } else {
+//              dataString[num] += "\n" + res;
+//            }
+//          }
+
+          Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+          if(res < avgHeight - threshold) {
+            // Hole
+            vi.vibrate(500);
+          }
+          else if(res > avgHeight + threshold) {
+            // Wall
+            vi.vibrate(100);
           }
         }
 
@@ -1008,30 +1030,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     if(!isHit) {
       if(num == 0) textView.setText("can't find proper surface");
 
-      if(flag) {
-        if(dataString[num] == null) {
-          dataString[num] = "0.00";
-        } else {
-          dataString[num] += "\n" + "0.00";
-        }
-      }
+//      if(flag) {
+//        if(dataString[num] == null) {
+//          dataString[num] = "0.00";
+//        } else {
+//          dataString[num] += "\n" + "0.00";
+//        }
+//      }
     }
-
-//    float threshold = 0.4f;
-//    if(prevfirstHitTy != 0 && prevLastHitTy != 0) {
-//      if(Math.abs(prevfirstHitTy - firstY) > threshold) { // Detect Wall
-//        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-//        vi.vibrate(300);
-//      }
-//      if(Math.abs(prevLastHitTy - lastY) > threshold) { // Detect Hole
-//        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-//        vi.vibrate(300);
-//      }
-//    }
-
-//    prevfirstHitTy = firstY;
-//    prevLastHitTy = lastY;
-//    return 0;
   }
 
   private void calDistance(Frame frame, float w, float h) {
