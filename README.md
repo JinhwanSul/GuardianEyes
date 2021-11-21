@@ -13,7 +13,20 @@ https://docs.google.com/presentation/d/1MAk7BvqR4HZWOYEZu85BdtR31GxwC12R_6se4th3
 
 
 
-3d sound feed back sdk 함수들입니다. 
+3d sound feed back sdk 함수들입니다. 다음과 같은 run() { } 안에 넣어주면 될것같습니다
+        mGvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+        new Thread(
+            new Runnable() {
+                @Override
+                public void run() {
+                  여기
+                }
+            })
+        .start();
+
+
+
+
 
 
             //사운드 파일은 다음을 호출하여 메모리에 미리 로드할 수 있습니다.
