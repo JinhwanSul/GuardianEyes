@@ -1,4 +1,4 @@
-package com.google.ar.core.examples.java.helloar;
+package com.google.ar.core.examples.java.helloar.detection;
 
 import static java.lang.Float.max;
 import static java.lang.Float.min;
@@ -33,7 +33,7 @@ public class TFObjectDetector {
 
     private Detector detector;
     int cropSize;
-    TFObjectDetector (Context context) {
+    public TFObjectDetector(Context context) {
         try {
             detector = TFLiteObjectDetectionAPIModel.create(
                     context,

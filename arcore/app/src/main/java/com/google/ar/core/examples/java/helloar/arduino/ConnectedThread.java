@@ -1,8 +1,10 @@
-package com.google.ar.core.examples.java.helloar;
+package com.google.ar.core.examples.java.helloar.arduino;
 
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.SystemClock;
+
+import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
 import java.io.IOException;
 import java.io.InputStream;

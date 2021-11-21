@@ -2,7 +2,6 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 #opencv library
-#TODO: Should change OPENCVROOT to your own path
 OPENCVROOT:=${LOCAL_PATH}/../../../../../../../../../../../../opencv
 OPENCV_CAMERA_MODULES:=on
 OPENCV_INSTALL_MODULES:=on

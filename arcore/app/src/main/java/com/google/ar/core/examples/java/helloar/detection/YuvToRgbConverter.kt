@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.ar.core.examples.java.helloar
+package com.google.ar.core.examples.java.helloar.detection
 
 import android.content.Context
 import android.graphics.Bitmap

@@ -1,4 +1,3 @@
-#include "com_google_ar_core_examples_java_helloar_Process.h"
 #include <opencv2/opencv.hpp>
 #include <jni.h>
 #include <android/log.h>
@@ -55,14 +54,14 @@ double iouThreshold = 0.3;
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_initializeData(JNIEnv *env, jclass clazz) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_initializeData(JNIEnv *env, jclass clazz) {
     detFrameData.clear();
     detTitle.clear();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_setTitle(JNIEnv *env, jclass clazz, jstring title) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_setTitle(JNIEnv *env, jclass clazz, jstring title) {
     char* nativeStr;
     const char* tmp = env->GetStringUTFChars(title, 0);
     nativeStr = strdup(tmp);
@@ -76,7 +75,7 @@ Java_com_google_ar_core_examples_java_helloar_Process_setTitle(JNIEnv *env, jcla
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_setBox(JNIEnv *env, jclass clazz, jfloat x, jfloat y, jfloat width, jfloat height) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_setBox(JNIEnv *env, jclass clazz, jfloat x, jfloat y, jfloat width, jfloat height) {
     Rect_<float> tmpRect(x, y, width, height);
     TrackingBox input;
     input.box = tmpRect;
@@ -87,7 +86,7 @@ Java_com_google_ar_core_examples_java_helloar_Process_setBox(JNIEnv *env, jclass
 
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_getData(JNIEnv *env, jclass clazz, jint index) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_getData(JNIEnv *env, jclass clazz, jint index) {
     if (index >= frameTrackingResult.size())
         return NULL;
 
@@ -110,7 +109,7 @@ Java_com_google_ar_core_examples_java_helloar_Process_getData(JNIEnv *env, jclas
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_getTrackingTitle(JNIEnv *env, jclass clazz, jint index) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_getTrackingTitle(JNIEnv *env, jclass clazz, jint index) {
     if (index >= frameTrackingTitle.size())
         return NULL;
 
@@ -122,7 +121,7 @@ Java_com_google_ar_core_examples_java_helloar_Process_getTrackingTitle(JNIEnv *e
 
 extern "C"
 JNIEXPORT int JNICALL
-Java_com_google_ar_core_examples_java_helloar_Process_Sort(JNIEnv *env, jclass clazz) {
+Java_com_google_ar_core_examples_java_helloar_tracking_Process_Sort(JNIEnv *env, jclass clazz) {
     // count frame
     frame_count++;
 

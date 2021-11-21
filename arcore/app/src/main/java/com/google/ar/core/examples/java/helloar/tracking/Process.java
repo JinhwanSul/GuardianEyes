@@ -1,4 +1,4 @@
-package com.google.ar.core.examples.java.helloar;
+package com.google.ar.core.examples.java.helloar.tracking;
 
 public class Process {
     public static native int Sort(); // do SORT algorithm. Return 1 for first frame, return 0 for others.

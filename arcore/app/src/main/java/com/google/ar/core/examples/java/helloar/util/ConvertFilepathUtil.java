@@ -1,4 +1,4 @@
-package com.google.ar.core.examples.java.helloar;
+package com.google.ar.core.examples.java.helloar.util;
 import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.Context;
@@ -33,8 +33,6 @@ public class ConvertFilepathUtil {
                 final String type = split[0];
 
                 path = Environment.getExternalStorageDirectory() + "/" + split[1];
-
-                // TODO handle non-primary volumes
             }
             // DownloadsProvider
             else if (isDownloadsDocument(uri)) {

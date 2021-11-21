@@ -6,14 +6,12 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.media.Image;
 import android.net.Uri;
 import android.opengl.GLES30;
@@ -23,7 +21,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,25 +28,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.util.Pair;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
-import com.google.ar.core.DepthPoint;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
-import com.google.ar.core.InstantPlacementPoint;
 import com.google.ar.core.Plane;
-import com.google.ar.core.PlaybackStatus;
-import com.google.ar.core.PointCloud;
-import com.google.ar.core.Point;
 import com.google.ar.core.Pose;
-import com.google.ar.core.RecordingConfig;
-import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
-import com.google.ar.core.Track;
-import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -57,7 +44,6 @@ import com.google.ar.core.examples.java.common.helpers.DepthSettings;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
-import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
 import com.google.ar.core.examples.java.common.samplerender.GLError;
@@ -69,22 +55,28 @@ import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundRenderer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneRenderer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.SpecularCubemapFilter;
+import com.google.ar.core.examples.java.helloar.arduino.ConnectedThread;
+import com.google.ar.core.examples.java.helloar.detection.TFObjectDetector;
+import com.google.ar.core.examples.java.helloar.detection.YuvToRgbConverter;
+import com.google.ar.core.examples.java.helloar.tracking.Tracker;
+import com.google.ar.core.examples.java.helloar.tracking.TrackingResult;
+import com.google.ar.core.examples.java.helloar.util.Checker;
+import com.google.ar.core.examples.java.helloar.util.ConvertFilepathUtil;
+import com.google.ar.core.examples.java.helloar.util.DataSaver;
+import com.google.ar.core.examples.java.helloar.tracking.GuardObject;
+import com.google.ar.core.examples.java.helloar.util.Recording;
+import com.google.ar.core.examples.java.helloar.util.Sound;
+import com.google.ar.core.examples.java.helloar.util.Util;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
-import com.google.ar.core.exceptions.PlaybackFailedException;
-import com.google.ar.core.exceptions.RecordingFailedException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
-import org.joda.time.DateTime;
 import org.tensorflow.lite.examples.detection.tflite.Detector;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -92,20 +84,11 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-
-//gvr import
-import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.CURTAIN_HEAVY;
-import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.PLASTER_SMOOTH;
-import com.google.vr.sdk.audio.GvrAudioEngine;
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
 
@@ -113,31 +96,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
 
-  private static final String MP4_DATASET_FILENAME_TEMPLATE = "arcore-dataset-%s.mp4";
-  private static final String MP4_DATASET_TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss";
-
-  private static final float Z_NEAR = 0.1f;
-  private static final float Z_FAR = 100f;
-
   private static final int CUBEMAP_RESOLUTION = 16;
   private static final int CUBEMAP_NUMBER_OF_IMPORTANCE_SAMPLES = 32;
-
-  private enum AppState {
-    IDLE,
-    RECORDING,
-    PLAYBACK
-  }
 
   static {
     System.loadLibrary("opencv_java4");
     System.loadLibrary("native-lib");
   }
-
-  // Randomly generated UUID and custom MIME type to mark the anchor track for this sample.
-  private static final UUID ANCHOR_TRACK_ID =
-          UUID.fromString("a65e59fc-2e13-4607-b514-35302121c138");
-  private static final String ANCHOR_TRACK_MIME_TYPE =
-          "application/hello-recording-playback-anchor";
 
   private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
   public final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
@@ -146,24 +111,21 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final String ARDUINO_NAME = "ESP32_SuperSonic";
   private static final UUID BT_MODULE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // "random" unique identifier
 
-  private final AtomicReference<AppState> currentState = new AtomicReference<>(AppState.IDLE);
-
-  private String playbackDatasetPath;
-  private String lastRecordingDatasetPath;
+  private final float INPUT_SIZE = 500.0f;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
-  private TextView textView;
-  private TextView avgHeightTextView;
   private TextView arduinoTextView;
+
+  public TextView textView;
+  public TextView avgHeightTextView;
 
   private boolean installRequested;
 
-  private Session session;
+  public Session session;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
-  private TapHelper tapHelper;
   private SampleRender render;
 
   private Button startRecordingButton;
@@ -178,7 +140,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Framebuffer virtualSceneFramebuffer;
   private boolean hasSetTextureNames = false;
 
-  private final DepthSettings depthSettings = new DepthSettings();
+  public final DepthSettings depthSettings = new DepthSettings();
 
   // Box Shader
   private VertexBuffer boxVertexBuffer;
@@ -195,7 +157,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Shader pointCloudShader;
   // Keep track of the last point cloud rendered to avoid updating the VBO if point cloud
   // was not changed.  Do this using the timestamp since we can't compare PointCloud objects.
-  private long lastPointCloudTimestamp = 0;
 
   // Virtual object (ARCore pawn)
   private Mesh virtualObjectMesh;
@@ -210,12 +171,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16]; // projection x view x model
 
-  //private MyObjectdetector myObjectdetector;
   private TFObjectDetector myObjectdetector;
   private YuvToRgbConverter yuvToRgbConverter;
-
-  public static RectF objRect = new RectF(0,0,0,0);
-  public static Pair<Float, Float> coor;
 
   private Handler mHandler; // Our main handler that will receive callback notifications
 
@@ -224,15 +181,40 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
   private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
 
-  //3D sound module
-  private GvrAudioEngine mGvrAudioEngine;
-  private String SOUND_FILE = "beep_01.wav";
-  private String SOUND_FILE2 = "beep03.wav";
+  private Map objectMapper = new HashMap<Integer, GuardObject>();
+  private long prevTime = System.nanoTime();
+
+  private List<Detector.Recognition> detectResult;
+  private TrackingResult trackingResults;
+
+  // Recoding
+  private Recording recording;
+  // DataSaver
+  private DataSaver dataSaver;
+  // Sound
+  private Sound sound;
+  // Checker
+  private Checker checker;
+  // Tracker
+  private Tracker tracker;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    loadInternalStateFromIntentExtras();
+
+    // Setup recording
+    recording = new Recording(this);
+    recording.loadInternalStateFromIntentExtras();
+
+    // Setup dataSaver
+    dataSaver = new DataSaver(this.getFilesDir());
+
+    // Setup sound
+    sound = new Sound(this);
+    // Setup checker
+    checker = new Checker(this);
+    // Setup tracker
+    tracker = new Tracker();
 
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
@@ -241,139 +223,45 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     arduinoTextView = findViewById(R.id.arduioTextView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
-    // Set up touch listener.
-//    tapHelper = new TapHelper(/*context=*/ this);
-//    surfaceView.setOnTouchListener(tapHelper);
-
-    mGvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
-    new Thread(
-            new Runnable() {
-              @Override
-              public void run() {
-                //Cf. https://developers.google.com/vr/android/reference/com/google/vr/sdk/audio/GvrAudioEngine
-                mGvrAudioEngine.preloadSoundFile(SOUND_FILE);
-                mGvrAudioEngine.preloadSoundFile(SOUND_FILE2);
-                mGvrAudioEngine.setRoomProperties(15, 15, 15, PLASTER_SMOOTH, PLASTER_SMOOTH, CURTAIN_HEAVY);
-              }
-            })
-            .start();
-
-
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
-    //myObjectdetector = new MyObjectdetector();
     myObjectdetector = new TFObjectDetector(this);
     yuvToRgbConverter = new YuvToRgbConverter(this);
-    coor = null;
 
     installRequested = false;
-
     depthSettings.onCreate(this);
 
     startRecordingButton = (Button)findViewById(R.id.start_recording_button);
     stopRecordingButton = (Button)findViewById(R.id.stop_recording_button);
-    startRecordingButton.setOnClickListener(view -> startRecording());
-    stopRecordingButton.setOnClickListener(view -> stopRecording());
+    startRecordingButton.setOnClickListener(view -> recording.startRecording());
+    stopRecordingButton.setOnClickListener(view -> recording.stopRecording());
 
     startPlaybackButton = (Button)findViewById(R.id.playback_button);
     stopPlaybackButton = (Button)findViewById(R.id.close_playback_button);
     exploreButton = (Button)findViewById(R.id.explore_button);
-    startPlaybackButton.setOnClickListener(view -> startPlayback());
-    stopPlaybackButton.setOnClickListener(view -> stopPlayback());
-    exploreButton.setOnClickListener(view -> exploreMP4());
+    startPlaybackButton.setOnClickListener(view -> recording.startPlayback());
+    stopPlaybackButton.setOnClickListener(view -> recording.stopPlayback());
+    exploreButton.setOnClickListener(view -> recording.exploreMP4());
     recordingPlaybackPathTextView = findViewById(R.id.recording_playback_path);
-    surfaceView.setOnLongClickListener(view -> changeViewMode());
+    surfaceView.setOnLongClickListener(view -> recording.changeViewMode());
 
     mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
 
     updateUI();
   }
 
-  private boolean changeViewMode() {
-    depthSettings.setDepthColorVisualizationEnabled(!depthSettings.depthColorVisualizationEnabled());
-    return true;
-  }
-
-  private void exploreMP4() {
-    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-    intent.addCategory(Intent.CATEGORY_OPENABLE);
-    intent.setType("video/mp4");
-    startActivityForResult(intent, 10);
-  }
-
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data){
     super.onActivityResult(requestCode, resultCode, data);
 
-    if(requestCode==10){
-      if (resultCode==RESULT_OK) {
-        Log.d(TAG, "jeff inputStream check:" + ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0))));
-        playbackDatasetPath = ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0)));
-        Toast.makeText(HelloArActivity.this, "result ok!" + playbackDatasetPath, Toast.LENGTH_SHORT).show();
+    if(requestCode == 10){
+      if(resultCode == RESULT_OK) {
+        recording.playbackDatasetPath = ConvertFilepathUtil.getPath(getApplicationContext(), Uri.parse(data.toUri(0)));
+        Toast.makeText(this, "result ok!" + recording.playbackDatasetPath, Toast.LENGTH_SHORT).show();
         updateUI();
       }else{
-        Toast.makeText(HelloArActivity.this, "result cancle!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "result cancel!", Toast.LENGTH_SHORT).show();
       }
-    }
-  }
-
-  /** Performs action when playback button is clicked. */
-  private void startPlayback() {
-    if (playbackDatasetPath == null) {
-      return;
-    }
-    currentState.set(AppState.PLAYBACK);
-    restartActivityWithIntentExtras();
-  }
-
-  /** Performs action when close_playback button is clicked. */
-  private void stopPlayback() {
-    currentState.set(AppState.IDLE);
-    restartActivityWithIntentExtras();
-  }
-
-  private static final String DESIRED_DATASET_PATH_KEY = "desired_dataset_path_key";
-  private static final String DESIRED_APP_STATE_KEY = "desired_app_state_key";
-  private static final int PERMISSIONS_REQUEST_CODE = 0;
-
-  private void restartActivityWithIntentExtras() {
-    Intent intent = this.getIntent();
-    Bundle bundle = new Bundle();
-    bundle.putString(DESIRED_APP_STATE_KEY, currentState.get().name());
-    bundle.putString(DESIRED_DATASET_PATH_KEY, playbackDatasetPath);
-    intent.putExtras(bundle);
-    this.finish();
-    this.startActivity(intent);
-  }
-
-  @Override
-  protected void onDestroy() {
-    if (session != null) {
-      session.close();
-      session = null;
-    }
-    super.onDestroy();
-  }
-
-  private void setPlaybackDatasetPath() {
-    if (session.getPlaybackStatus() == PlaybackStatus.OK) {
-      Log.d(TAG, "Session is already playing back.");
-      setStateAndUpdateUI(AppState.PLAYBACK);
-      return;
-    }
-    if (playbackDatasetPath != null) {
-      try {
-        File fileCheck = new File(playbackDatasetPath);
-        session.setPlaybackDatasetUri(Uri.fromFile(fileCheck));
-      } catch (PlaybackFailedException e) {
-        String errorMsg = "Failed to set playback MP4 dataset. " + e;
-        Log.e(TAG, errorMsg, e);
-        messageSnackbarHelper.showError(this, errorMsg);
-        Log.d(TAG, "Setting app state to IDLE, as the playback is not in progress.");
-        setStateAndUpdateUI(AppState.IDLE);
-        return;
-      }
-      setStateAndUpdateUI(AppState.PLAYBACK);
     }
   }
 
@@ -407,9 +295,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
         // Create the session.
         session = new Session(/* context= */ this);
-        if (currentState.get() == AppState.PLAYBACK) {
+        if (recording.currentState.get() == Recording.AppState.PLAYBACK) {
           // Dataset playback will start when session.resume() is called.
-          setPlaybackDatasetPath();
+          recording.setPlaybackDatasetPath();
         }
 
         mHandler = new Handler(Looper.getMainLooper()){
@@ -511,185 +399,22 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       return;
     }
 
-    if (currentState.get() == AppState.PLAYBACK) {
+    if (recording.currentState.get() == Recording.AppState.PLAYBACK) {
       // Must be called after dataset playback is started by call to session.resume().
-      checkPlaybackStatus();
+      recording.checkPlaybackStatus();
     }
     surfaceView.onResume();
-    mGvrAudioEngine.resume();
+    sound.mGvrAudioEngine.resume();
     displayRotationHelper.onResume();
   }
 
-  /** Checks the playback is in progress without issues. */
-  private void checkPlaybackStatus() {
-    Log.d(TAG, "GuardianEyes "+session.getPlaybackStatus());
-    if ((session.getPlaybackStatus() != PlaybackStatus.OK)
-            && (session.getPlaybackStatus() != PlaybackStatus.FINISHED)) {
-      setStateAndUpdateUI(AppState.IDLE);
+  @Override
+  protected void onDestroy() {
+    if (session != null) {
+      session.close();
+      session = null;
     }
-  }
-
-  private void updateUI() {
-    Log.d(TAG, "GuardianEyes update UI:" + currentState.get());
-    switch (currentState.get()) {
-      case IDLE:
-        startRecordingButton.setVisibility(View.VISIBLE);
-        startRecordingButton.setEnabled(true);
-        stopRecordingButton.setVisibility(View.GONE);
-        stopRecordingButton.setEnabled(false);
-        stopPlaybackButton.setVisibility(View.INVISIBLE);
-        stopPlaybackButton.setEnabled(false);
-        startPlaybackButton.setVisibility(View.VISIBLE);
-        startPlaybackButton.setEnabled(playbackDatasetPath != null);
-        exploreButton.setVisibility(View.VISIBLE);
-        exploreButton.setEnabled(true);
-        recordingPlaybackPathTextView.setText(
-                getResources()
-                        .getString(
-                                R.string.playback_path_text,
-                                playbackDatasetPath == null ? "" : playbackDatasetPath));
-        break;
-      case RECORDING:
-        startRecordingButton.setVisibility(View.GONE);
-        startRecordingButton.setEnabled(false);
-        stopRecordingButton.setVisibility(View.VISIBLE);
-        stopRecordingButton.setEnabled(true);
-        stopPlaybackButton.setVisibility(View.INVISIBLE);
-        stopPlaybackButton.setEnabled(false);
-        startPlaybackButton.setEnabled(false);
-        recordingPlaybackPathTextView.setText(
-                getResources()
-                        .getString(
-                                R.string.recording_path_text,
-                                lastRecordingDatasetPath == null ? "" : lastRecordingDatasetPath));
-        break;
-      case PLAYBACK:
-        startRecordingButton.setVisibility(View.INVISIBLE);
-        stopRecordingButton.setVisibility(View.INVISIBLE);
-        startPlaybackButton.setVisibility(View.INVISIBLE);
-        exploreButton.setVisibility(View.INVISIBLE);
-        startRecordingButton.setEnabled(false);
-        stopRecordingButton.setEnabled(false);
-        stopPlaybackButton.setVisibility(View.VISIBLE);
-        stopPlaybackButton.setEnabled(true);
-        exploreButton.setEnabled(false);
-        recordingPlaybackPathTextView.setText("");
-        break;
-    }
-  }
-
-  /** Generates a new MP4 dataset filename based on the current system time. */
-  private static String getNewMp4DatasetFilename() {
-    return String.format(
-            Locale.ENGLISH,
-            MP4_DATASET_FILENAME_TEMPLATE,
-            DateTime.now().toString(MP4_DATASET_TIMESTAMP_FORMAT));
-  }
-
-  /** Generates a new MP4 dataset path based on the current system time. */
-  private String getNewDatasetPath() {
-    File baseDir = this.getExternalFilesDir(null);
-    if (baseDir == null) {
-      return null;
-    }
-    return new File(this.getExternalFilesDir(null), getNewMp4DatasetFilename()).getAbsolutePath();
-  }
-
-  private boolean flag = false;
-  /** Performs action when start_recording button is clicked. */
-  private void startRecording() {
-    flag = true;
-    try {
-      lastRecordingDatasetPath = getNewDatasetPath();
-      if (lastRecordingDatasetPath == null) {
-        Log.d(TAG, "Failed to generate a MP4 dataset path for recording.");
-        return;
-      }
-
-      Track anchorTrack =
-              new Track(session).setId(ANCHOR_TRACK_ID).setMimeType(ANCHOR_TRACK_MIME_TYPE);
-
-      session.startRecording(
-              new RecordingConfig(session)
-                      .setMp4DatasetUri(Uri.fromFile(new File(lastRecordingDatasetPath)))
-                      .setAutoStopOnPause(false)
-                      .addTrack(anchorTrack));
-    } catch (RecordingFailedException e) {
-      String errorMessage = "Failed to start recording. " + e;
-      Log.e(TAG, errorMessage, e);
-      messageSnackbarHelper.showError(this, errorMessage);
-      return;
-    }
-    if (session.getRecordingStatus() != RecordingStatus.OK) {
-      Log.d(TAG,
-              "Failed to start recording, recording status is " + session.getRecordingStatus());
-      return;
-    }
-    setStateAndUpdateUI(AppState.RECORDING);
-  }
-
-  /** Performs action when stop_recording button is clicked. */
-  private void stopRecording() {
-    flag = false;
-    saveData();
-
-    try {
-      session.stopRecording();
-    } catch (RecordingFailedException e) {
-      String errorMessage = "Failed to stop recording. " + e;
-      Log.e(TAG, errorMessage, e);
-      messageSnackbarHelper.showError(this, errorMessage);
-      return;
-    }
-    if (session.getRecordingStatus() == RecordingStatus.OK) {
-      Log.d(TAG,
-              "Failed to stop recording, recording status is " + session.getRecordingStatus());
-      return;
-    }
-    if (new File(lastRecordingDatasetPath).exists()) {
-      playbackDatasetPath = lastRecordingDatasetPath;
-      Log.d(TAG, "MP4 dataset has been saved at: " + playbackDatasetPath);
-    } else {
-      Log.d(TAG,
-              "Recording failed. File " + lastRecordingDatasetPath + " wasn't created.");
-    }
-    setStateAndUpdateUI(AppState.IDLE);
-  }
-
-  private void setStateAndUpdateUI(AppState state) {
-    currentState.set(state);
-    updateUI();
-  }
-
-  private void saveData() {
-    String path = getFilesDir().getAbsolutePath();
-    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-    String filePath = path + "/data_" + timeStamp + ".csv";
-    File firstYFile = new File(filePath);
-
-    String[][] splitted = new String[dataString.length][];
-    for(int i = 0; i < dataString.length; ++i)
-      splitted[i] = dataString[i].split("\n");
-    String output = "";
-    for(int i = 0; i < splitted[0].length; ++i) {
-      String tmp = "";
-      for(int j = 0; j < splitted.length; ++j) {
-        if(j == 0) tmp += splitted[j][i];
-        else tmp += "," + splitted[j][i];
-      }
-      if(i == 0) output += tmp;
-      else output += "\n" + tmp;
-    }
-
-    try {
-      BufferedWriter writer = new BufferedWriter(new FileWriter(firstYFile));
-      writer.write(output);
-      writer.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    dataString = new String[pointsX.length];
+    super.onDestroy();
   }
 
   @Override
@@ -699,27 +424,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     if (session != null) {
       displayRotationHelper.onPause();
       surfaceView.onPause();
-      mGvrAudioEngine.pause();
+      sound.mGvrAudioEngine.pause();
       session.pause();
     }
-  }
-
-  public void make3Dsound(Pose pos, int num){
-    //Log.d("gilho","make sound");
-    //this is sound module, what function take this module?
-    //float distance = pos.getdistance();
-    int soundId = 0;
-    if(num == 1){
-      soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
-    }
-    else{
-      soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE2);
-    }
-    float[] translation = new float[3];
-    pos.getTranslation(translation, 0);
-    mGvrAudioEngine.setSoundObjectPosition(soundId,translation[0],translation[1],translation[2]*3);
-    mGvrAudioEngine.playSound(soundId,false); //loop playback
-    mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId,GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
   }
 
   @Override
@@ -890,7 +597,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     Camera camera = frame.getCamera();
 
-
     // Update BackgroundRenderer state to match the depth settings.
     try {
       backgroundRenderer.setUseDepthVisualization(
@@ -916,10 +622,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    // Handle one tap per frame.
-//    handleTap(frame, camera);
-
-
     // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
     trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
@@ -939,8 +641,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       messageSnackbarHelper.showMessage(this, message);
     }
 
-    // -- Draw background
-
     if (frame.getTimestamp() != 0) {
       // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
       // drawing possible leftover data from previous sessions if the texture is reused.
@@ -951,27 +651,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     if (camera.getTrackingState() == TrackingState.PAUSED) {
       return;
     }
-
-    // -- Draw non-occluded virtual objects (planes, point cloud)
-
-    // Get projection matrix.
-//    camera.getProjectionMatrix(projectionMatrix, 0, Z_NEAR, Z_FAR);
-//
-//    // Get camera matrix and draw.
-//    camera.getViewMatrix(viewMatrix, 0);
-//
-//    // Visualize tracked points.
-//    // Use try-with-resources to automatically release the point cloud.
-//    try (PointCloud pointCloud = frame.acquirePointCloud()) {
-//      if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
-//        pointCloudVertexBuffer.set(pointCloud.getPoints());
-//        lastPointCloudTimestamp = pointCloud.getTimestamp();
-//      }
-//      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-//      pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
-//      render.draw(pointCloudMesh, pointCloudShader);
-//    }
-    //render.draw(boxMesh, boxShader);
 
     Image cameraImage = null;
     try {
@@ -985,8 +664,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Log.e(TAG, "Runtime error from acquiring camera image", e);
     } finally {
       if (cameraImage != null) {
-//         convert image to inputImage
-//        InputImage inputImage = InputImage.fromMediaImage(cameraImage, 0);
 
         Bitmap bitmapImage = Bitmap.createBitmap(cameraImage.getWidth(), cameraImage.getHeight(), Bitmap.Config.ARGB_8888);
         yuvToRgbConverter.yuvToRgb(cameraImage, bitmapImage);
@@ -995,12 +672,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         rotateMatrix.postRotate(90);
         bitmapImage = Bitmap.createBitmap(bitmapImage, 0, 0, bitmapImage.getWidth(), bitmapImage.getHeight(), rotateMatrix, false);
 
-        // InputImage inputImage = InputImage.fromBitmap(bitmapImage, 0);
-        // myObjectdetector.getResults(inputImage);
-        List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
-        calDistance(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
-        drawResultRects(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight(), render, result);
-        for(int i = 0; i < pointsX.length; ++i) checkWallOrHole(frame, camera, i);
+        detectResult = myObjectdetector.getResults(bitmapImage);
+        trackingResults = tracker.objectTracking(detectResult);
+
+        drawResultRects(render);
+        findVector(frame, render, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
+
+        // TODO: 그래프 그릴 수 있게 데이터 저장하는 로직 만들기
+        // 데이터를 저장하려면 check.START_RECORDING = true 를 해주면 된다.
+        // 데이터는 check.getSaveData 로 받아올 수 있다. 이를 dataSaver을 이용해 저장하자.
+        checker.checkWallOrHole(frame, camera, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
+
         cameraImage.close();
       }
     }
@@ -1014,123 +696,82 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     );
   }
 
-  // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  final float inputSize = 500.0f;
-//  private float prevfirstHitTy = 0.0f;
-//  private float prevLastHitTy = 0.0f;
-  float[] pointsX = {0.50f, 0.50f};
-  float[] pointsY = {0.50f, 0.75f};
-  private String[] dataString = new String[pointsX.length];
-  float avgHeight = 0, threshold = 0.2f;
-  int frameCount = 30, curFrame = 0, discardFrame = 30;
+  private void findVector(Frame frame, SampleRender render, float w, float h) {
+    // TODO: 그래프 그릴 수 있게 데이터 만들고 저장하기
+    // 데이터 가공 로직 만들기 + dataSaver로 저장하기
 
-  private void checkWallOrHole(Frame frame, Camera camera, int num) {
-    // Need adjustment
-    float w = virtualSceneFramebuffer.getWidth(), h = virtualSceneFramebuffer.getHeight();
-    float coorX = pointsX[num], coorY = pointsY[num];
-    List<HitResult> hitResultList = frame.hitTest(coorX * w, coorY * h);
-    boolean isHit = false;
+    long curTime = System.nanoTime();
+    long timeDif = curTime - prevTime;
+    prevTime = curTime;
 
-    for(HitResult hit : hitResultList) {
-      Trackable trackable = hit.getTrackable();
+    Map newMap = new HashMap<Integer, GuardObject>();
+    Pose myPos = frame.getCamera().getPose();
 
-      if(trackable instanceof DepthPoint)
-      {
-        float res = hit.getHitPose().ty() - camera.getPose().ty();
+    for(int i = 0; i < trackingResults.size(); ++i) {
+      float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
+      int id = (int) box[4];
 
-        if(curFrame < discardFrame) {
-          curFrame++;
+      float centerX = box[0] + box[2] / 2;
+      float centerY = box[1] + box[3] / 2;
+
+      float top = 2.0f * ((INPUT_SIZE - box[1]) / INPUT_SIZE) - 1.0f;
+      float left = 2.0f * (box[0] / INPUT_SIZE) - 1.0f;
+
+      List<HitResult> hitResultList = frame.hitTest(centerX / INPUT_SIZE * w, centerY / INPUT_SIZE * h);
+
+      float speed = 0.f;
+      float angle = 0.f;
+      if(!hitResultList.isEmpty()) {
+        Pose pos = hitResultList.get(0).getHitPose();
+
+        GuardObject obj = (GuardObject) objectMapper.get(id);
+
+        if(obj == null) {
+          obj = new GuardObject(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
         }
-        else if(curFrame - discardFrame < frameCount) {
-          int frameNum = curFrame - discardFrame;
-          avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
-          curFrame++;
+        obj.update(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
+        speed = obj.speed() / ((float)timeDif/(1000000000.0f));
+        angle = (float)Math.toDegrees(obj.angle());
 
-          avgHeightTextView.setText("Average height : " + avgHeight + "m");
-        }
-        else {
-          if(num == 0) textView.setText("Height difference : " + res + "m");
+        newMap.put(id, obj);
 
-//          if(flag) {
-//            if(dataString[num] == null) {
-//              dataString[num] = Float.toString(res);
-//            } else {
-//              dataString[num] += "\n" + res;
-//            }
-//          }
-
-          Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-          if(res < avgHeight - threshold) {
-            // Hole
-            vi.vibrate(500);
-          }
-          else if(res > avgHeight + threshold) {
-            // Wall
-            vi.vibrate(100);
-          }
-        }
-
-        isHit = true;
-        break;
+        if(speed > 0.25f && angle > 150.0f)
+          drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+        else
+          drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
       }
     }
 
-    if(!isHit) {
-      if(num == 0) textView.setText("can't find proper surface");
-
-//      if(flag) {
-//        if(dataString[num] == null) {
-//          dataString[num] = "0.00";
-//        } else {
-//          dataString[num] += "\n" + "0.00";
-//        }
-//      }
-    }
+    objectMapper = newMap;
   }
 
-  private void calDistance(Frame frame, float w, float h) {
-    float minDistance = 10000.0f;
-    List<HitResult> hitResultList = frame.hitTest(0.5f*w, 0.5f*h);
+  private void drawResultRects(SampleRender render) {
+    GLES30.glLineWidth(8.0f);
 
-    for (HitResult hit : hitResultList) {
-      if(hit.getDistance() < minDistance) {
-        minDistance = hit.getDistance();
-      }
+    for(int i = 0; i < trackingResults.size(); ++i) {
+      float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
+      String title = trackingResults.titles.get(i);
+      int id = (int) box[4];
+
+      float top = 2.0f * ((INPUT_SIZE - box[1]) / INPUT_SIZE) - 1.0f;
+      float bottom = 2.0f * ((INPUT_SIZE - (box[1] + box[3])) / INPUT_SIZE) - 1.0f;
+      float left = 2.0f * (box[0] / INPUT_SIZE) - 1.0f;
+      float right = 2.0f * ((box[0] + box[2]) / INPUT_SIZE) - 1.0f;
+
+      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+      test.put(new float[] {
+              left, top,
+              right, top,
+              right, bottom,
+              left, bottom});
+
+      boxVertexBuffer.set(test);
+      render.draw(boxMesh, boxShader);
+
+//      drawText(render,"[" + id + "] " + title, left, top, 0xff, 0xff, 0xff);
     }
 
-    hitResultList = frame.hitTest(0.45f*w, 0.5f*h);
-
-    for (HitResult hit : hitResultList) {
-      if(hit.getDistance() < minDistance) {
-        minDistance = hit.getDistance();
-      }
-    }
-
-    hitResultList = frame.hitTest(0.55f*w, 0.5f*h);
-
-    for (HitResult hit : hitResultList) {
-      if(hit.getDistance() < minDistance) {
-        minDistance = hit.getDistance();
-      }
-    }
-
-    hitResultList = frame.hitTest(0.5f*w, 0.55f*h);
-
-    for (HitResult hit : hitResultList) {
-      if(hit.getDistance() < minDistance) {
-        minDistance = hit.getDistance();
-      }
-    }
-
-    hitResultList = frame.hitTest(0.5f*w, 0.45f*h);
-
-    for (HitResult hit : hitResultList) {
-      if(hit.getDistance() < minDistance) {
-        minDistance = hit.getDistance();
-      }
-    }
-
-    textView.setText("distance is " + minDistance + " m");
+    GLES30.glLineWidth(1.0f);
   }
 
   private void drawText(SampleRender render, String str, float x, float y, int r, int g, int b) {
@@ -1177,139 +818,52 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     texture.close();
   }
 
-  private TrackingResult objectTracking(List<Detector.Recognition> result) {
-    Process.initializeData();
-    for(final Detector.Recognition rec : result) {
-      RectF rect = rec.getLocation();
-      Process.setData(rec.getTitle(), rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+  public void updateUI() {
+    switch (recording.currentState.get()) {
+      case IDLE:
+        startRecordingButton.setVisibility(View.VISIBLE);
+        startRecordingButton.setEnabled(true);
+        stopRecordingButton.setVisibility(View.GONE);
+        stopRecordingButton.setEnabled(false);
+        stopPlaybackButton.setVisibility(View.INVISIBLE);
+        stopPlaybackButton.setEnabled(false);
+        startPlaybackButton.setVisibility(View.VISIBLE);
+        startPlaybackButton.setEnabled(recording.playbackDatasetPath != null);
+        exploreButton.setVisibility(View.VISIBLE);
+        exploreButton.setEnabled(true);
+        recordingPlaybackPathTextView.setText(
+                getResources()
+                        .getString(
+                                R.string.playback_path_text,
+                                recording.playbackDatasetPath == null ? "" : recording.playbackDatasetPath));
+        break;
+      case RECORDING:
+        startRecordingButton.setVisibility(View.GONE);
+        startRecordingButton.setEnabled(false);
+        stopRecordingButton.setVisibility(View.VISIBLE);
+        stopRecordingButton.setEnabled(true);
+        stopPlaybackButton.setVisibility(View.INVISIBLE);
+        stopPlaybackButton.setEnabled(false);
+        startPlaybackButton.setEnabled(false);
+        recordingPlaybackPathTextView.setText(
+                getResources()
+                        .getString(
+                                R.string.recording_path_text,
+                                recording.lastRecordingDatasetPath == null ? "" : recording.lastRecordingDatasetPath));
+        break;
+      case PLAYBACK:
+        startRecordingButton.setVisibility(View.INVISIBLE);
+        stopRecordingButton.setVisibility(View.INVISIBLE);
+        startPlaybackButton.setVisibility(View.INVISIBLE);
+        exploreButton.setVisibility(View.INVISIBLE);
+        startRecordingButton.setEnabled(false);
+        stopRecordingButton.setEnabled(false);
+        stopPlaybackButton.setVisibility(View.VISIBLE);
+        stopPlaybackButton.setEnabled(true);
+        exploreButton.setEnabled(false);
+        recordingPlaybackPathTextView.setText("");
+        break;
     }
-
-    Process.Sort();
-
-    TrackingResult trackingResult = new TrackingResult();
-    for(int i = 0; ; ++i) {
-      float[] res = Process.getData(i);
-      String title = Process.getTrackingTitle(i);
-
-      if(res == null) break; // end of data
-
-      trackingResult.boxResults.add(res);
-      trackingResult.titles.add(title);
-    }
-
-    return trackingResult;
-  }
-
-  class GuardObject {
-    float x;
-    float y;
-    float z;
-    float dx;
-    float dy;
-    float dz;
-
-    GuardObject(float x, float y, float z) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-    }
-
-    void update(float x, float y, float z) {
-      dx = x - this.x;
-      dy = y - this.y;
-      dz = z - this.z;
-      this.x = x;
-      this.y = y;
-      this.z = z;
-    }
-
-    float angle() {
-      float cosTheta = (x * dx + y * dy + z * dz) / ((float) distance() * speed());
-      return (float)Math.acos(cosTheta);
-    }
-
-    float distance() {
-      return (float)Math.sqrt(x*x+y*y+z*z);
-    }
-
-    float speed() {
-      return (float)Math.sqrt(dx*dx + dy*dy + dz*dz);
-    }
-  }
-
-  private Map objectMapper = new HashMap<Integer, GuardObject>();
-  private long prevTime = System.nanoTime();
-
-  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
-    long curTime = System.nanoTime();
-    long timeDif = curTime - prevTime;
-    prevTime = curTime;
-    GLES30.glLineWidth(8.0f);
-    TrackingResult trackingResults = objectTracking(result);
-
-    Pose myPos = frame.getCamera().getPose();
-
-    Map newMap = new HashMap<Integer, GuardObject>();
-    for(int i = 0; i < trackingResults.size(); ++i) {
-      float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
-      String title = trackingResults.titles.get(i);
-      int id = (int) box[4];
-
-      float centerX = box[0] + box[2] / 2;
-      float centerY = box[1] + box[3] / 2;
-      List<HitResult> hitResultList = frame.hitTest(centerX / inputSize * w, centerY / inputSize * h);
-
-      float minDist = 10000.0f;
-      float speed = 0.f;
-      float angle = 0.f;
-      if(!hitResultList.isEmpty()) {
-        minDist = hitResultList.get(0).getDistance();
-        Pose pos = hitResultList.get(0).getHitPose();
-        //make 3D sound by condition
-        /*
-        if(minDist < 1.0f){
-          make3Dsound(pos, 1);
-        }
-        else if (minDist < 2.0f){
-          make3Dsound(pos, 2);
-        }
-        */
-        GuardObject obj = (GuardObject) objectMapper.get(id);
-
-        if(obj == null) {
-          obj = new GuardObject(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
-        }
-        obj.update(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
-        speed = obj.speed() / ((float)timeDif/(1000000000.0f));
-        angle = (float)Math.toDegrees(obj.angle());
-        minDist = obj.distance();
-        newMap.put(id, obj);
-      }
-
-      float top = 2.0f * ((inputSize - box[1]) / inputSize) - 1.0f;
-      float bottom = 2.0f * ((inputSize - (box[1] + box[3])) / inputSize) - 1.0f;
-      float left = 2.0f * (box[0] / inputSize) - 1.0f;
-      float right = 2.0f * ((box[0] + box[2]) / inputSize) - 1.0f;
-
-      FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-      test.put(new float[] {
-              left, top,
-              right, top,
-              right, bottom,
-              left, bottom});
-
-      boxVertexBuffer.set(test);
-      render.draw(boxMesh, boxShader);
-      /*
-
-       */
-      if(speed > 0.25f && angle > 150.0f)
-        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
-      else
-        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
-    }
-    objectMapper = newMap;
-    GLES30.glLineWidth(1.0f);
   }
 
   private void configureSession() {
@@ -1322,34 +876,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
 
     session.configure(config);
-  }
-
-  private void loadInternalStateFromIntentExtras() {
-    if (getIntent() == null || getIntent().getExtras() == null) {
-      return;
-    }
-    Bundle bundle = getIntent().getExtras();
-    if (bundle.containsKey(DESIRED_DATASET_PATH_KEY)) {
-      playbackDatasetPath = getIntent().getStringExtra(DESIRED_DATASET_PATH_KEY);
-    }
-    if (bundle.containsKey(DESIRED_APP_STATE_KEY)) {
-      String state = getIntent().getStringExtra(DESIRED_APP_STATE_KEY);
-      if (state != null) {
-        switch (state) {
-          case "PLAYBACK":
-            currentState.set(AppState.PLAYBACK);
-            break;
-          case "IDLE":
-            currentState.set(AppState.IDLE);
-            break;
-          case "RECORDING":
-            currentState.set(AppState.RECORDING);
-            break;
-          default:
-            break;
-        }
-      }
-    }
   }
 
   private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
