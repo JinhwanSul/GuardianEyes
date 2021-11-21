@@ -16,7 +16,7 @@ https://docs.google.com/presentation/d/1MAk7BvqR4HZWOYEZu85BdtR31GxwC12R_6se4th3
 3d sound feed back sdk 함수들입니다. 
 
 
- //사운드 파일은 다음을 호출하여 메모리에 미리 로드할 수 있습니다.
+            //사운드 파일은 다음을 호출하여 메모리에 미리 로드할 수 있습니다.
             void gvr_audio_update(gvr_audio_context* api);
             bool gvr_audio_preload_soundfile(gvr_audio_context* api,
                                  const char* filename);
