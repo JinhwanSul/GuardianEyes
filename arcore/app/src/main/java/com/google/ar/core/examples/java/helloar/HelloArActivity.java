@@ -227,6 +227,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   //3D sound module
   private GvrAudioEngine mGvrAudioEngine;
   private String SOUND_FILE = "beep_01.wav";
+  private String SOUND_FILE2 = "beep03.wav";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -251,6 +252,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               public void run() {
                 //Cf. https://developers.google.com/vr/android/reference/com/google/vr/sdk/audio/GvrAudioEngine
                 mGvrAudioEngine.preloadSoundFile(SOUND_FILE);
+                mGvrAudioEngine.preloadSoundFile(SOUND_FILE2);
                 mGvrAudioEngine.setRoomProperties(15, 15, 15, PLASTER_SMOOTH, PLASTER_SMOOTH, CURTAIN_HEAVY);
               }
             })
@@ -702,16 +704,22 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
   }
 
-  public void make3Dsound(float[] translation){
-    Log.d("gilho","make sound");
+  public void make3Dsound(Pose pos, int num){
+    //Log.d("gilho","make sound");
     //this is sound module, what function take this module?
-    int soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
-
-    //getTranslation(translation, 0);
+    //float distance = pos.getdistance();
+    int soundId = 0;
+    if(num == 1){
+      soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
+    }
+    else{
+      soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE2);
+    }
+    float[] translation = new float[3];
+    pos.getTranslation(translation, 0);
     mGvrAudioEngine.setSoundObjectPosition(soundId,translation[0],translation[1],translation[2]*3);
     mGvrAudioEngine.playSound(soundId,false); //loop playback
     mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId,GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
-    //mSounds.add(soundId);
   }
 
   @Override
@@ -1252,13 +1260,20 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       List<HitResult> hitResultList = frame.hitTest(centerX / inputSize * w, centerY / inputSize * h);
 
       float minDist = 10000.0f;
-      float[] trans = new float[3];
       float speed = 0.f;
       float angle = 0.f;
       if(!hitResultList.isEmpty()) {
         minDist = hitResultList.get(0).getDistance();
         Pose pos = hitResultList.get(0).getHitPose();
-        pos.getTranslation(trans, 0);
+        //make 3D sound by condition
+        /*
+        if(minDist < 1.0f){
+          make3Dsound(pos, 1);
+        }
+        else if (minDist < 2.0f){
+          make3Dsound(pos, 2);
+        }
+        */
         GuardObject obj = (GuardObject) objectMapper.get(id);
 
         if(obj == null) {
@@ -1285,10 +1300,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
-      if(minDist < 0.7f){
-        //temp.getHitPose().getTranslation(translation,0);
-        make3Dsound(trans);
-      }
+      /*
+
+       */
       if(speed > 0.25f && angle > 150.0f)
         drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
       else
