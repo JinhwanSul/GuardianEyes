@@ -103,6 +103,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+//gvr import
+import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.CURTAIN_HEAVY;
+import static com.google.vr.sdk.audio.GvrAudioEngine.MaterialName.PLASTER_SMOOTH;
+import com.google.vr.sdk.audio.GvrAudioEngine;
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
 
@@ -215,6 +219,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
   private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
 
+  //3D sound module
+  private GvrAudioEngine mGvrAudioEngine;
+  private String SOUND_FILE = "beep_01.wav";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -230,6 +237,19 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Set up touch listener.
 //    tapHelper = new TapHelper(/*context=*/ this);
 //    surfaceView.setOnTouchListener(tapHelper);
+
+    mGvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
+    new Thread(
+            new Runnable() {
+              @Override
+              public void run() {
+                //Cf. https://developers.google.com/vr/android/reference/com/google/vr/sdk/audio/GvrAudioEngine
+                mGvrAudioEngine.preloadSoundFile(SOUND_FILE);
+                mGvrAudioEngine.setRoomProperties(15, 15, 15, PLASTER_SMOOTH, PLASTER_SMOOTH, CURTAIN_HEAVY);
+              }
+            })
+            .start();
+
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -488,6 +508,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       checkPlaybackStatus();
     }
     surfaceView.onResume();
+    mGvrAudioEngine.resume();
     displayRotationHelper.onResume();
   }
 
@@ -633,8 +654,21 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     if (session != null) {
       displayRotationHelper.onPause();
       surfaceView.onPause();
+      mGvrAudioEngine.pause();
       session.pause();
     }
+  }
+
+  public void make3Dsound(float[] translation){
+    Log.d("gilho","make sound");
+    //this is sound module, what function take this module?
+    int soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE);
+
+    //getTranslation(translation, 0);
+    mGvrAudioEngine.setSoundObjectPosition(soundId,translation[0],translation[1],translation[2]*3);
+    mGvrAudioEngine.playSound(soundId,false); //loop playback
+    mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId,GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
+    //mSounds.add(soundId);
   }
 
   @Override
@@ -1065,8 +1099,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       List<HitResult> hitResultList = frame.hitTest(coord.first/inputSize*w, coord.second/inputSize*h);
       Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
       float minDist = 10000.0f;
+      float[] trans = new float[3];
       for (HitResult hit : hitResultList) {
-        if(hit.getDistance() < minDist) minDist = hit.getDistance();
+        if(hit.getDistance() < minDist){
+          minDist = hit.getDistance();
+          hit.getHitPose().getTranslation(trans,0);
+        }
       }
       float top = 2.0f * ((inputSize - rect.top) / inputSize) - 1.0f;
       float bottom = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
@@ -1083,6 +1121,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
       drawText(render,recog.getTitle() + " " + minDist + "m", left, top);
+      if(minDist < 0.7f){
+        //temp.getHitPose().getTranslation(translation,0);
+        make3Dsound(trans);
+      }
     }
     GLES30.glLineWidth(1.0f);
   }
