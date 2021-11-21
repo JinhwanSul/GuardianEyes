@@ -49,6 +49,7 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PlaybackStatus;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 import com.google.ar.core.RecordingConfig;
 import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
@@ -95,11 +96,11 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -127,6 +128,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     IDLE,
     RECORDING,
     PLAYBACK
+  }
+
+  static {
+    System.loadLibrary("opencv_java4");
+    System.loadLibrary("native-lib");
   }
 
   // Randomly generated UUID and custom MIME type to mark the anchor track for this sample.
@@ -1046,12 +1052,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     textView.setText("distance is " + minDistance + " m");
   }
 
-  private void drawText(SampleRender render, String str, float x, float y) {
+  private void drawText(SampleRender render, String str, float x, float y, int r, int g, int b) {
 
     Paint textPaint = new Paint();
     textPaint.setTextSize(32);
     textPaint.setAntiAlias(true);
-    textPaint.setARGB(0xff, 0xff, 0xff, 0xff);
+    textPaint.setARGB(0xff, r, g, b);
     textPaint.setTextAlign(Paint.Align.LEFT);
 //    textPaint.setTextScaleX(0.5f);
     Rect rect = new Rect();
@@ -1090,29 +1096,115 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     texture.close();
   }
 
-  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
+  private TrackingResult objectTracking(List<Detector.Recognition> result) {
+    Process.initializeData();
+    for(final Detector.Recognition rec : result) {
+      RectF rect = rec.getLocation();
+      Process.setData(rec.getTitle(), rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+    }
 
+    Process.Sort();
+
+    TrackingResult trackingResult = new TrackingResult();
+    for(int i = 0; ; ++i) {
+      float[] res = Process.getData(i);
+      String title = Process.getTrackingTitle(i);
+
+      if(res == null) break; // end of data
+
+      trackingResult.boxResults.add(res);
+      trackingResult.titles.add(title);
+    }
+
+    return trackingResult;
+  }
+
+  class GuardObject {
+    float x;
+    float y;
+    float z;
+    float dx;
+    float dy;
+    float dz;
+
+    GuardObject(float x, float y, float z) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
+
+    void update(float x, float y, float z) {
+      dx = x - this.x;
+      dy = y - this.y;
+      dz = z - this.z;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
+
+    float angle() {
+      float cosTheta = (x * dx + y * dy + z * dz) / ((float) distance() * speed());
+      return (float)Math.acos(cosTheta);
+    }
+
+    float distance() {
+      return (float)Math.sqrt(x*x+y*y+z*z);
+    }
+
+    float speed() {
+      return (float)Math.sqrt(dx*dx + dy*dy + dz*dz);
+    }
+  }
+
+  private Map objectMapper = new HashMap<Integer, GuardObject>();
+  private long prevTime = System.nanoTime();
+
+  private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
+    long curTime = System.nanoTime();
+    long timeDif = curTime - prevTime;
+    prevTime = curTime;
     GLES30.glLineWidth(8.0f);
-    for(final Detector.Recognition recog:result) {
-      RectF rect = recog.getLocation();
-      Pair<Float, Float> coord = recog.getCenterCoordinate();
-      List<HitResult> hitResultList = frame.hitTest(coord.first/inputSize*w, coord.second/inputSize*h);
-      Log.d(TAG, "GuardianEyes " + recog.getTitle() +" coord:" + coord + " input:" + w + "," + h + " left " + rect.left + " right " + rect.right + " top " + rect.top + " bottom " + rect.bottom);
+    TrackingResult trackingResults = objectTracking(result);
+
+    Pose myPos = frame.getCamera().getPose();
+
+    Map newMap = new HashMap<Integer, GuardObject>();
+    for(int i = 0; i < trackingResults.size(); ++i) {
+      float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
+      String title = trackingResults.titles.get(i);
+      int id = (int) box[4];
+
+      float centerX = box[0] + box[2] / 2;
+      float centerY = box[1] + box[3] / 2;
+      List<HitResult> hitResultList = frame.hitTest(centerX / inputSize * w, centerY / inputSize * h);
+
       float minDist = 10000.0f;
       float[] trans = new float[3];
-      for (HitResult hit : hitResultList) {
-        if(hit.getDistance() < minDist){
-          minDist = hit.getDistance();
-          hit.getHitPose().getTranslation(trans,0);
+      float speed = 0.f;
+      float angle = 0.f;
+      if(!hitResultList.isEmpty()) {
+        minDist = hitResultList.get(0).getDistance();
+        Pose pos = hitResultList.get(0).getHitPose();
+        pos.getTranslation(trans, 0);
+        GuardObject obj = (GuardObject) objectMapper.get(id);
+
+        if(obj == null) {
+          obj = new GuardObject(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
         }
+        obj.update(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
+        speed = obj.speed() / ((float)timeDif/(1000000000.0f));
+        angle = (float)Math.toDegrees(obj.angle());
+        minDist = obj.distance();
+        newMap.put(id, obj);
       }
-      float top = 2.0f * ((inputSize - rect.top) / inputSize) - 1.0f;
-      float bottom = 2.0f * ((inputSize - rect.bottom) / inputSize) - 1.0f;
-      float left = 2.0f * (rect.left / inputSize) - 1.0f;
-      float right = 2.0f * (rect.right / inputSize) - 1.0f;
+
+      float top = 2.0f * ((inputSize - box[1]) / inputSize) - 1.0f;
+      float bottom = 2.0f * ((inputSize - (box[1] + box[3])) / inputSize) - 1.0f;
+      float left = 2.0f * (box[0] / inputSize) - 1.0f;
+      float right = 2.0f * ((box[0] + box[2]) / inputSize) - 1.0f;
 
       FloatBuffer test = ByteBuffer.allocateDirect(2 * 4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-      test.put(new float[]{
+      test.put(new float[] {
               left, top,
               right, top,
               right, bottom,
@@ -1120,12 +1212,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
-      drawText(render,recog.getTitle() + " " + minDist + "m", left, top);
       if(minDist < 0.7f){
         //temp.getHitPose().getTranslation(translation,0);
         make3Dsound(trans);
       }
+      if(speed > 0.25f && angle > 150.0f)
+        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+      else
+        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
     }
+    objectMapper = newMap;
     GLES30.glLineWidth(1.0f);
   }
 

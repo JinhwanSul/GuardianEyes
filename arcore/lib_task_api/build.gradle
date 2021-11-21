@@ -17,9 +17,6 @@ android {
         }
     }
 
-    aaptOptions {
-        noCompress "tflite"
-    }
 
     lintOptions {
         checkReleaseBuilds false
@@ -31,6 +28,9 @@ android {
     compileOptions {
         sourceCompatibility 1.8
         targetCompatibility 1.8
+    }
+    androidResources {
+        noCompress 'tflite'
     }
 }
 
