@@ -1,38 +1,30 @@
 
 package com.google.ar.core.examples.java.helloar;
 
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
-import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.Image;
 import android.net.Uri;
-import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
-import android.opengl.Matrix;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -44,16 +36,20 @@ import androidx.core.util.Pair;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
+import com.google.ar.core.DepthPoint;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
+import com.google.ar.core.InstantPlacementPoint;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PlaybackStatus;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Point;
 import com.google.ar.core.Pose;
 import com.google.ar.core.RecordingConfig;
 import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
 import com.google.ar.core.Track;
+import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -82,13 +78,13 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
-//import com.google.mlkit.vision.common.InputImage;
-import org.tensorflow.lite.examples.detection.tflite.Detector;
-
 
 import org.joda.time.DateTime;
+import org.tensorflow.lite.examples.detection.tflite.Detector;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -96,6 +92,8 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -156,6 +154,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
   private TextView textView;
+  private TextView avgHeightTextView;
   private TextView arduinoTextView;
 
   private boolean installRequested;
@@ -237,6 +236,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     textView = findViewById(R.id.text_view);
+    avgHeightTextView = findViewById(R.id.avg_height_text_view);
     arduinoTextView = findViewById(R.id.arduioTextView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
@@ -420,7 +420,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
               }
-              arduinoTextView.setText(readMessage);
+              arduinoTextView.setText(readMessage.split("cm")[0]);
             }
 
             if(msg.what == CONNECTING_STATUS){
@@ -593,8 +593,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     return new File(this.getExternalFilesDir(null), getNewMp4DatasetFilename()).getAbsolutePath();
   }
 
+  private boolean flag = false;
   /** Performs action when start_recording button is clicked. */
   private void startRecording() {
+    flag = true;
     try {
       lastRecordingDatasetPath = getNewDatasetPath();
       if (lastRecordingDatasetPath == null) {
@@ -626,6 +628,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   /** Performs action when stop_recording button is clicked. */
   private void stopRecording() {
+    flag = false;
+    saveData();
+
     try {
       session.stopRecording();
     } catch (RecordingFailedException e) {
@@ -654,9 +659,41 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     updateUI();
   }
 
+  private void saveData() {
+    String path = getFilesDir().getAbsolutePath();
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    String filePath = path + "/data_" + timeStamp + ".csv";
+    File firstYFile = new File(filePath);
+
+    String[][] splitted = new String[dataString.length][];
+    for(int i = 0; i < dataString.length; ++i)
+      splitted[i] = dataString[i].split("\n");
+    String output = "";
+    for(int i = 0; i < splitted[0].length; ++i) {
+      String tmp = "";
+      for(int j = 0; j < splitted.length; ++j) {
+        if(j == 0) tmp += splitted[j][i];
+        else tmp += "," + splitted[j][i];
+      }
+      if(i == 0) output += tmp;
+      else output += "\n" + tmp;
+    }
+
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(firstYFile));
+      writer.write(output);
+      writer.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    dataString = new String[pointsX.length];
+  }
+
   @Override
   public void onPause() {
     super.onPause();
+
     if (session != null) {
       displayRotationHelper.onPause();
       surfaceView.onPause();
@@ -955,7 +992,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         List<Detector.Recognition> result = myObjectdetector.getResults(bitmapImage);
         calDistance(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
         drawResultRects(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight(), render, result);
-        checkWallOrHole(frame, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
+        for(int i = 0; i < pointsX.length; ++i) checkWallOrHole(frame, camera, i);
         cameraImage.close();
       }
     }
@@ -971,40 +1008,76 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
   final float inputSize = 500.0f;
-  private float prevfirstHitTy = 0.0f;
-  private float prevLastHitTy = 0.0f;
+//  private float prevfirstHitTy = 0.0f;
+//  private float prevLastHitTy = 0.0f;
+  float[] pointsX = {0.50f, 0.50f};
+  float[] pointsY = {0.50f, 0.75f};
+  private String[] dataString = new String[pointsX.length];
+  float avgHeight = 0, threshold = 0.2f;
+  int frameCount = 30, curFrame = 0, discardFrame = 30;
 
-  private void checkWallOrHole(Frame frame, float w, float h) {
+  private void checkWallOrHole(Frame frame, Camera camera, int num) {
     // Need adjustment
-    float coordinateX = 0.5f, coordinateY = 0.25f;
-    List<HitResult> hitResultList = frame.hitTest(coordinateX * w, coordinateY * h);
-    if(hitResultList.isEmpty()) {
-      return;
+    float w = virtualSceneFramebuffer.getWidth(), h = virtualSceneFramebuffer.getHeight();
+    float coorX = pointsX[num], coorY = pointsY[num];
+    List<HitResult> hitResultList = frame.hitTest(coorX * w, coorY * h);
+    boolean isHit = false;
+
+    for(HitResult hit : hitResultList) {
+      Trackable trackable = hit.getTrackable();
+
+      if(trackable instanceof DepthPoint)
+      {
+        float res = hit.getHitPose().ty() - camera.getPose().ty();
+
+        if(curFrame < discardFrame) {
+          curFrame++;
+        }
+        else if(curFrame - discardFrame < frameCount) {
+          int frameNum = curFrame - discardFrame;
+          avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
+          curFrame++;
+
+          avgHeightTextView.setText("Average height : " + avgHeight + "m");
+        }
+        else {
+          if(num == 0) textView.setText("Height difference : " + res + "m");
+
+//          if(flag) {
+//            if(dataString[num] == null) {
+//              dataString[num] = Float.toString(res);
+//            } else {
+//              dataString[num] += "\n" + res;
+//            }
+//          }
+
+          Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+          if(res < avgHeight - threshold) {
+            // Hole
+            vi.vibrate(500);
+          }
+          else if(res > avgHeight + threshold) {
+            // Wall
+            vi.vibrate(100);
+          }
+        }
+
+        isHit = true;
+        break;
+      }
     }
 
-    HitResult firstHit = hitResultList.get(0);
-    HitResult lastHit = hitResultList.get(hitResultList.size() - 1);
+    if(!isHit) {
+      if(num == 0) textView.setText("can't find proper surface");
 
-    float firstY = firstHit.getHitPose().ty();
-    float lastY = lastHit.getHitPose().ty();
-//    textView.setText(trans[0] + " " + trans[1] + " " + trans[2]);
-//    Log.d("asdf", trans[0] + " " + trans[1] + " " + trans[2] + "\n" + coor[0] + " " + coor[1] + " " + coor[2]);
-
-    float threshold = 0.4f;
-    if(prevfirstHitTy != 0 && prevLastHitTy != 0) {
-      if(Math.abs(prevfirstHitTy - firstY) > threshold) { // Detect Wall
-        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        vi.vibrate(300);
-      }
-      if(Math.abs(prevLastHitTy - lastY) > threshold) { // Detect Hole
-        Vibrator vi = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        vi.vibrate(300);
-      }
+//      if(flag) {
+//        if(dataString[num] == null) {
+//          dataString[num] = "0.00";
+//        } else {
+//          dataString[num] += "\n" + "0.00";
+//        }
+//      }
     }
-
-    prevfirstHitTy = firstY;
-    prevLastHitTy = lastY;
-//    return 0;
   }
 
   private void calDistance(Frame frame, float w, float h) {
@@ -1225,9 +1298,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     GLES30.glLineWidth(1.0f);
   }
 
-  /**
-   * Configures the session with feature settings.
-   */
   private void configureSession() {
     Config config = session.getConfig();
     config.setLightEstimationMode(Config.LightEstimationMode.ENVIRONMENTAL_HDR);

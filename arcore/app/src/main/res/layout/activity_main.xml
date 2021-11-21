@@ -31,7 +31,7 @@
       android:layout_height="wrap_content"
       android:background="#000"
       android:gravity="center"
-      android:text="distance is 0m"
+      android:text="Height difference is 0m"
       android:textColor="#FFF"
       android:textSize="18sp" />
 
@@ -124,10 +124,21 @@
       android:layout_alignParentEnd="true"/>
 
   <TextView
-      android:id="@+id/arduioTextView"
+      android:id="@+id/avg_height_text_view"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_below="@+id/text_view"
+      android:background="#000"
+      android:gravity="center"
+      android:text="Average height : 0m"
+      android:textColor="#FFF"
+      android:textSize="18sp" />
+
+  <TextView
+      android:id="@+id/arduioTextView"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_below="@+id/avg_height_text_view"
       android:layout_marginTop="2dp"
       android:background="#155"
       android:gravity="center"
