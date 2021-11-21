@@ -39,6 +39,7 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PlaybackStatus;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 import com.google.ar.core.RecordingConfig;
 import com.google.ar.core.RecordingStatus;
 import com.google.ar.core.Session;
@@ -83,10 +84,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.security.GuardedObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -884,12 +887,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     textView.setText("distance is " + minDistance + " m");
   }
 
-  private void drawText(SampleRender render, String str, float x, float y) {
+  private void drawText(SampleRender render, String str, float x, float y, int r, int g, int b) {
 
     Paint textPaint = new Paint();
     textPaint.setTextSize(32);
     textPaint.setAntiAlias(true);
-    textPaint.setARGB(0xff, 0xff, 0xff, 0xff);
+    textPaint.setARGB(0xff, r, g, b);
     textPaint.setTextAlign(Paint.Align.LEFT);
 //    textPaint.setTextScaleX(0.5f);
     Rect rect = new Rect();
@@ -951,10 +954,56 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     return trackingResult;
   }
 
+  class GuardObject {
+    float x;
+    float y;
+    float z;
+    float dx;
+    float dy;
+    float dz;
+
+    GuardObject(float x, float y, float z) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
+
+    void update(float x, float y, float z) {
+      dx = x - this.x;
+      dy = y - this.y;
+      dz = z - this.z;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
+
+    float angle() {
+      float cosTheta = (x * dx + y * dy + z * dz) / ((float) distance() * speed());
+      return (float)Math.acos(cosTheta);
+    }
+
+    float distance() {
+      return (float)Math.sqrt(x*x+y*y+z*z);
+    }
+
+    float speed() {
+      return (float)Math.sqrt(dx*dx + dy*dy + dz*dz);
+    }
+  }
+
+  private Map objectMapper = new HashMap<Integer, GuardObject>();
+  private long prevTime = System.nanoTime();
+
   private void drawResultRects(Frame frame, float w, float h, SampleRender render, List<Detector.Recognition> result) {
+    long curTime = System.nanoTime();
+    long timeDif = curTime - prevTime;
+    prevTime = curTime;
     GLES30.glLineWidth(8.0f);
     TrackingResult trackingResults = objectTracking(result);
 
+    Pose myPos = frame.getCamera().getPose();
+
+    Map newMap = new HashMap<Integer, GuardObject>();
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
       String title = trackingResults.titles.get(i);
@@ -965,7 +1014,22 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       List<HitResult> hitResultList = frame.hitTest(centerX / inputSize * w, centerY / inputSize * h);
 
       float minDist = 10000.0f;
-      if(!hitResultList.isEmpty()) minDist = hitResultList.get(0).getDistance();
+      float speed = 0.f;
+      float angle = 0.f;
+      if(!hitResultList.isEmpty()) {
+        minDist = hitResultList.get(0).getDistance();
+        Pose pos = hitResultList.get(0).getHitPose();
+        GuardObject obj = (GuardObject) objectMapper.get(id);
+
+        if(obj == null) {
+          obj = new GuardObject(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
+        }
+        obj.update(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
+        speed = obj.speed() / ((float)timeDif/(1000000000.0f));
+        angle = (float)Math.toDegrees(obj.angle());
+        minDist = obj.distance();
+        newMap.put(id, obj);
+      }
 
       float top = 2.0f * ((inputSize - box[1]) / inputSize) - 1.0f;
       float bottom = 2.0f * ((inputSize - (box[1] + box[3])) / inputSize) - 1.0f;
@@ -981,8 +1045,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
-      drawText(render,"[" + id + "] " + title + " " + minDist + "m", left, top);
+      if(speed > 0.25f && angle > 150.0f)
+        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+      else
+        drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
     }
+    objectMapper = newMap;
     GLES30.glLineWidth(1.0f);
   }
 
