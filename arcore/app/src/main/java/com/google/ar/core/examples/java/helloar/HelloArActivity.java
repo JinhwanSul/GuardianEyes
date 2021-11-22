@@ -343,7 +343,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                 } catch (IOException e) {
                   try {
                     fail = true;
-                    Log.d("jinhwan", e.toString());
+                    Log.d(TAG, e.toString());
                     mBTSocket.close();
                     mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
                             .sendToTarget();
@@ -679,8 +679,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         findVector(frame, render, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
 
         // TODO: 그래프 그릴 수 있게 데이터 저장하는 로직 만들기
-        // 데이터를 저장하려면 check.START_RECORDING = true 를 해주면 된다.
-        // 데이터는 check.getSaveData 로 받아올 수 있다. 이를 dataSaver을 이용해 저장하자.
+        // 데이터를 저장하려면 checker.START_RECORDING = true 를 해주면 된다.
+        // 데이터는 checker.getSaveData 로 받아올 수 있다. 이를 dataSaver을 이용해 저장하자.
         checker.checkWallOrHole(frame, camera, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
 
         cameraImage.close();

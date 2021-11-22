@@ -2,6 +2,7 @@ package com.google.ar.core.examples.java.helloar.util;
 
 import android.content.Context;
 import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
 
 import com.google.ar.core.Camera;
 import com.google.ar.core.DepthPoint;
@@ -12,6 +13,7 @@ import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class Checker {
 
@@ -26,12 +28,25 @@ public class Checker {
   private HelloArActivity context;
   private String[] saveData;
 
+  // tts feedback
+  private TextToSpeech tts;
+
   // set this flag in order to start recording.
   public boolean START_RECORDING = false;
 
   public Checker(HelloArActivity context) {
     this.context = context;
     this.saveData = new String[pointsX.length];
+    tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
+      @Override
+      public void onInit(int status) {
+        if (status != TextToSpeech.ERROR) {
+          tts.setLanguage(Locale.KOREAN);
+        }
+      }
+    });
+    tts.setPitch(1.0f);
+    tts.setSpeechRate(1.0f);
   }
 
   public String[] getSaveData() {
@@ -70,16 +85,20 @@ public class Checker {
             Vibrator vi = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
             if(res < avgHeight - threshold) { // Downstair
               vi.vibrate(500);
+              tts.speak("내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
             else if(res > avgHeight + threshold) { // Wall
               // Wall
+              tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
               vi.vibrate(100);
             }
             else if(true) { // Upstair
               // feedback
+              tts.speak("올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
             else if(true) { // Obstacle
               // feedback
+              tts.speak("장애물 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
 
             if(START_RECORDING) {
