@@ -1,5 +1,7 @@
 package com.google.ar.core.examples.java.helloar.tracking;
 
+import com.google.ar.core.examples.java.helloar.util.Util;
+
 import org.checkerframework.checker.units.qual.A;
 
 import java.util.ArrayList;
@@ -38,6 +40,12 @@ public class GuardObject {
     this.z.add(z);
 
     count++;
+  }
+
+  public void filter() {
+    this.x = Util.arrangePoints(this.x);
+    this.y = Util.arrangePoints(this.y);
+    this.z = Util.arrangePoints(this.z);
   }
 
   public float angle() {

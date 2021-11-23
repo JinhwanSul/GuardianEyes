@@ -5,6 +5,7 @@ import com.google.ar.core.HitResult;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
+import java.util.ArrayList;
 import java.util.List;
 
 enum Method{MEAN, MIDDLE};
@@ -15,23 +16,23 @@ public class Util {
   * 좌표들을 받아서 같은 길이의 재배열된 좌표를 반환
   * 선형 회귀 등을 이용
   * */
-  private static double[][] arrangePointsHelper(float[] input) {
-    double[][] modifiedInput = new double[input.length][2];
-    for (int i = 0; i < input.length; i++) {
+  private static double[][] arrangePointsHelper(List<Float> input) {
+    double[][] modifiedInput = new double[input.size()][2];
+    for (int i = 0; i < input.size(); i++) {
       modifiedInput[i][0] = i;
-      modifiedInput[i][1] = (double) input[i];
+      modifiedInput[i][1] = (double) input.get(i);
     }
     return modifiedInput;
   }
 
-  public static float[] arrangePoints(float[] input) {
+  public static List<Float> arrangePoints(List<Float> input) {
     // TODO: implement this method
     SimpleRegression simpleRegression = new SimpleRegression();
     simpleRegression.addData(arrangePointsHelper(input));
-    float[] output = input.clone();
-    for (int i = 0; i < input.length; i++) {
-      double linearValue = simpleRegression.predict( (double) input[i]);
-      output[i] = (float) linearValue;
+    List<Float> output = new ArrayList<>(input);
+    for (int i = 0; i < input.size(); i++) {
+      double linearValue = simpleRegression.predict( (double) input.get(i));
+      output.add( (float) linearValue );
     }
     return output;
   }
