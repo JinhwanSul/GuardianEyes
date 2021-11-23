@@ -41,25 +41,27 @@ public class Util {
   * 좌표들을 받아서 대표값 하나를 반환
   * 평균 등 이용
   * */
-  public static float findRepresentativeValue(float[] input) {
+  public static float findRepresentativeValue(List<Float> input) {
     // TODO: implement this method
+    if (input.size() == 0) return -1.0f;
+
     float output = 0f;
     Method method = Method.MEAN;
     switch (method) {
       case MEAN:
         for (float f : input) output += f;
-        output = output / (float) input.length;
+        output = output / (float) input.size();
         break;
       case MIDDLE:
-        int mid = input.length / 2;
-        if ( input.length % 2 == 0) {
-          output = (input[mid] + input[mid-1]) / 2;
+        int mid = input.size() / 2;
+        if ( input.size() % 2 == 0) {
+          output = (input.get(mid) + input.get(mid-1)) / 2;
         } else {
-          output = input[mid];
+          output = input.get(mid);
         }
         break;
       default:
-        output = input[0];
+        output = input.get(0);
         break;
     }
 
@@ -70,13 +72,13 @@ public class Util {
   * 주어진 좌표를 양자화하기
   * 정수로 양자화 or 소수 첫째짜리까지만 or ...
   * */
-  public static float[] quantizePoints(float[] input) {
+  public static List<Float> quantizePoints(List<Float> input) {
     // TODO: implement this method
     int decimalPoints = 0;
     double powTen = Math.pow(10.0, decimalPoints);
-    float[] output = input.clone();
-    for (int i = 0; i < input.length; i++) {
-      output[i] = (float) (Math.round(input[i] * powTen) / powTen);
+    List<Float> output = new ArrayList<>(input);
+    for (int i = 0; i < input.size(); i++) {
+      output.add((float) (Math.round(input.get(i) * powTen) / powTen));
     }
     return output;
   }
