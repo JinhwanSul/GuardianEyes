@@ -9,7 +9,7 @@ import java.util.List;
 
 public class GuardObject {
 //  private float x, y, z, dx, dy ,dz;
-  private List<Float> x, y, z, dx, dy, dz;
+  public List<Float> x, y, z, dx, dy, dz;
   private int count;
   private int unit;
 
