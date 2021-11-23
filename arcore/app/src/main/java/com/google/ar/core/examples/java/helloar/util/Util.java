@@ -6,9 +6,10 @@ import com.google.ar.core.HitResult;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-enum Method{MEAN, MIDDLE};
+enum Method{MEAN, MIDDLE, MEDIAN};
 
 public class Util {
 
@@ -29,9 +30,9 @@ public class Util {
     // TODO: implement this method
     SimpleRegression simpleRegression = new SimpleRegression();
     simpleRegression.addData(arrangePointsHelper(input));
-    List<Float> output = new ArrayList<>(input);
+    List<Float> output = new ArrayList<>();
     for (int i = 0; i < input.size(); i++) {
-      double linearValue = simpleRegression.predict( (double) input.get(i));
+      double linearValue = simpleRegression.predict( (double) i);
       output.add( (float) linearValue );
     }
     return output;
@@ -46,7 +47,7 @@ public class Util {
     if (input.size() == 0) return -1.0f;
 
     float output = 0f;
-    Method method = Method.MEAN;
+    Method method = Method.MEDIAN;
     switch (method) {
       case MEAN:
         for (float f : input) output += f;
@@ -58,6 +59,15 @@ public class Util {
           output = (input.get(mid) + input.get(mid-1)) / 2;
         } else {
           output = input.get(mid);
+        }
+        break;
+      case MEDIAN:
+        input.sort(Comparator.naturalOrder());
+        int mid2 = input.size() / 2;
+        if ( input.size() % 2 == 0) {
+          output = (input.get(mid2) + input.get(mid2-1)) / 2;
+        } else {
+          output = input.get(mid2);
         }
         break;
       default:

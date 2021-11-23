@@ -199,8 +199,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Tracker tracker;
 
   public int frame_count = 0;
-  public final int FRAME_UNIT_NUM = 5;
-  public final int DISCARD_FRAME_NUM = 30;
+  public final int FRAME_UNIT_NUM = 15;
+  public final int DISCARD_FRAME_NUM = 100;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -708,9 +708,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // TODO: 그래프 그릴 수 있게 데이터 만들고 저장하기
     // 데이터 가공 로직 만들기 + dataSaver로 저장하기
 
-    long curTime = System.nanoTime();
-    long timeDif = curTime - prevTime;
-    prevTime = curTime;
+//    long curTime = System.nanoTime();
+//    long timeDif = curTime - prevTime;
+//    prevTime = curTime;
 
     Map newMap = new HashMap<Integer, GuardObject>();
     Pose cameraPos = frame.getCamera().getPose();
@@ -737,29 +737,19 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         obj.update(pos.tx() - cameraPos.tx(), pos.ty() - cameraPos.ty(), pos.tz() - cameraPos.tz());
 
         if(frame_count > DISCARD_FRAME_NUM && frame_count % FRAME_UNIT_NUM == 0) {
-          Log.d("asdf", "calculate speed");
-
-          String[] res = new String[6];
-          for(String s : res) s = "";
-
-          for(float p : obj.x) res[0] += p + ",";
-          for(float p : obj.y) res[1] += p + ",";
-          for(float p : obj.z) res[2] += p + ",";
-
 //      float speed = obj.speed() / ((float)timeDif/(1000000000.0f));
+//          obj.filter();
           float speed = obj.speed();
-          float angle = (float) Math.toDegrees(obj.angle());
-          Log.d("asdf", "speed " + speed + " angle " + angle);
+//          float angle = (float) Math.toDegrees(obj.angle());
+          float angle = obj.angle();
 
-          for(float p : obj.x) res[3] += p + ",";
-          for(float p : obj.y) res[4] += p + ",";
-          for(float p : obj.z) res[5] += p + ",";
-
-          dataSaver.saveData(res);
 
 //      if(speed > 0.25f && angle > 150.0f)
-          if(speed > 0f && angle > 150.0f) {
+          if(speed > 10f && angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
             drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+          }
+          else if(speed <= 10f && speed > 0) {
+            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0x00, 0x0, 0xff);
           }
           else {
             drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
