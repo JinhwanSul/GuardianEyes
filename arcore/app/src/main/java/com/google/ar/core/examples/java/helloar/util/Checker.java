@@ -11,7 +11,6 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -23,7 +22,7 @@ public class Checker {
   private float[] pointsY = {0.50f, 0.75f};
   private String[] dataString = new String[pointsX.length];
   private float avgHeight = 0, threshold = 0.2f;
-  private int frameCount = 30, curFrame = 0, discardFrame = 30;
+  private final int averageCalculationFrameNum = 30;
 
   private HelloArActivity context;
   private String[] saveData;
@@ -50,8 +49,8 @@ public class Checker {
   }
 
   public String[] getSaveData() {
-    String[] record = saveData.clone();
-    saveData = new String[pointsY.length];
+    String[] record = dataString.clone();
+//    saveData = new String[pointsY.length];
     return record;
   }
 
@@ -67,15 +66,10 @@ public class Checker {
         if(trackable instanceof DepthPoint)
         {
           float res = hit.getHitPose().ty() - camera.getPose().ty();
+          int frameNum = context.frame_count - context.DISCARD_FRAME_NUM;
 
-          if(curFrame < discardFrame) { // discardFrame 수만큼 첫 프레임 버리기
-            curFrame++;
-          }
-          else if(curFrame - discardFrame < frameCount) { // frameCount 수만큼 평균 높이 구하기
-            int frameNum = curFrame - discardFrame;
+          if(frameNum > 0 && frameNum < averageCalculationFrameNum) { // frameCount 수만큼 평균 높이 구하기
             avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
-            curFrame++;
-
             context.avgHeightTextView.setText("Average height : " + avgHeight + "m");
           }
           else {

@@ -28,7 +28,7 @@ public class TFObjectDetector {
     private static final String TF_OD_API_MODEL_FILE = "detectSample.tflite";
     private static final String TF_OD_API_LABELS_FILE = "labelmap.txt";
     private static final ArrayList<String> USEFUL_LABELS = new ArrayList<String>(
-            Arrays.asList("person", "bicycle", "car", "motorcycle", "bus", "truck", "cat", "dog", "chair", "dining table"));
+            Arrays.asList("person", "bicycle", "car", "motorcycle", "bus", "truck", "cat", "dog", "chair", "dining table", "laptop"));
     private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
 
     private Detector detector;

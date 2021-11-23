@@ -198,6 +198,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Tracker
   private Tracker tracker;
 
+  public int frame_count = 0;
+  public final int FRAME_UNIT_NUM = 5;
+  public final int DISCARD_FRAME_NUM = 30;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -684,6 +688,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         checker.checkWallOrHole(frame, camera, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
 
         cameraImage.close();
+
+        if(camera.getTrackingState() == TrackingState.TRACKING) {
+          frame_count++;
+        }
       }
     }
 
@@ -705,7 +713,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     prevTime = curTime;
 
     Map newMap = new HashMap<Integer, GuardObject>();
-    Pose myPos = frame.getCamera().getPose();
+    Pose cameraPos = frame.getCamera().getPose();
 
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
@@ -719,26 +727,34 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
       List<HitResult> hitResultList = frame.hitTest(centerX / INPUT_SIZE * w, centerY / INPUT_SIZE * h);
 
-      float speed = 0.f;
-      float angle = 0.f;
+      GuardObject obj = (GuardObject) objectMapper.get(id);
+
       if(!hitResultList.isEmpty()) {
         Pose pos = hitResultList.get(0).getHitPose();
+        if(obj == null)
+          obj = new GuardObject(FRAME_UNIT_NUM);
 
-        GuardObject obj = (GuardObject) objectMapper.get(id);
+        obj.update(pos.tx() - cameraPos.tx(), pos.ty() - cameraPos.ty(), pos.tz() - cameraPos.tz());
 
-        if(obj == null) {
-          obj = new GuardObject(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
+        if(frame_count > DISCARD_FRAME_NUM && frame_count % FRAME_UNIT_NUM == 0) {
+          Log.d("asdf", "calculate speed");
+//      float speed = obj.speed() / ((float)timeDif/(1000000000.0f));
+          float speed = obj.speed();
+          float angle = (float) Math.toDegrees(obj.angle());
+          Log.d("asdf", "speed " + speed + " angle " + angle);
+
+//      if(speed > 0.25f && angle > 150.0f)
+          if(speed > 0f && angle > 150.0f) {
+            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+          }
+          else {
+            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
+          }
+
+          obj.clear();
         }
-        obj.update(pos.tx() - myPos.tx(), pos.ty() - myPos.ty(), pos.tz() - myPos.tz());
-        speed = obj.speed() / ((float)timeDif/(1000000000.0f));
-        angle = (float)Math.toDegrees(obj.angle());
 
         newMap.put(id, obj);
-
-        if(speed > 0.25f && angle > 150.0f)
-          drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
-        else
-          drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
       }
     }
 
@@ -768,7 +784,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       boxVertexBuffer.set(test);
       render.draw(boxMesh, boxShader);
 
-//      drawText(render,"[" + id + "] " + title, left, top, 0xff, 0xff, 0xff);
+//      drawText(render,"[" + id + "] " + title, left, top);
     }
 
     GLES30.glLineWidth(1.0f);
