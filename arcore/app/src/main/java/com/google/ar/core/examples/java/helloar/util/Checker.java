@@ -2,7 +2,6 @@ package com.google.ar.core.examples.java.helloar.util;
 
 import android.content.Context;
 import android.os.Vibrator;
-import android.speech.tts.TextToSpeech;
 
 import com.google.ar.core.Camera;
 import com.google.ar.core.DepthPoint;
@@ -28,7 +27,10 @@ public class Checker {
   private String[] saveData;
 
   // tts feedback
-  private TextToSpeech tts;
+  //private TextToSpeech tts;
+
+  // state class
+  private State state;
 
   // set this flag in order to start recording.
   public boolean START_RECORDING = false;
@@ -36,16 +38,7 @@ public class Checker {
   public Checker(HelloArActivity context) {
     this.context = context;
     this.saveData = new String[pointsX.length];
-    tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
-      @Override
-      public void onInit(int status) {
-        if (status != TextToSpeech.ERROR) {
-          tts.setLanguage(Locale.KOREAN);
-        }
-      }
-    });
-    tts.setPitch(1.0f);
-    tts.setSpeechRate(1.0f);
+    this.state = new State(context);
   }
 
   public String[] getSaveData() {
@@ -77,22 +70,24 @@ public class Checker {
 
             // TODO: Implement feedback of floor detection
             Vibrator vi = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-            if(res < avgHeight - threshold) { // Downstair
-              vi.vibrate(500);
-              tts.speak("내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+            if(res < avgHeight - threshold) {
+              //Downstair
+              state.setWallstate(state.DOWN);
             }
             else if(res > avgHeight + threshold) { // Wall
               // Wall
-              tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
-              vi.vibrate(100);
+              state.setWallstate(state.WALL);
             }
-            else if(true) { // Upstair
-              // feedback
-              tts.speak("올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+            else if(true) {
+              // Upstair
+              state.setWallstate(state.UP);
             }
             else if(true) { // Obstacle
               // feedback
-              tts.speak("장애물 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+              //tts.speak("장애물 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+            }
+            else{
+              state.setWallstate(state.PLANE);
             }
 
             if(START_RECORDING) {
