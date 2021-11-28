@@ -2,6 +2,7 @@ package com.google.ar.core.examples.java.helloar.util;
 
 import android.content.Context;
 import android.os.Vibrator;
+import android.util.Log;
 
 import com.google.ar.core.Camera;
 import com.google.ar.core.DepthPoint;
@@ -74,10 +75,11 @@ public class Checker {
             if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
 
             // TODO: Implement feedback of floor detection
-            data.add(res);
+            data.add(res - avgHeight);
             if(data.size() > FRAME_DECISION_NUM) {
               data.remove(0);
-              Floor st = classfyState();
+              Floor st = classifyState();
+              Log.d("asdff", st.name());
               state.setWallstate(st);
             }
 
@@ -108,7 +110,59 @@ public class Checker {
     }
   }
 
-  private Floor classfyState() {
+  private int classifyFragment(List<Float> dataFragment) {
+    Log.d("state", "dataFragement"+dataFragment.toString());
+    double slope = Math.abs(Util.LinearSlope(dataFragment));
+    Log.d("state", "single slope"+String.valueOf(slope));
+    if (slope > 0.1) {
+      return 1; // single wall
+    } else {
+      return 0; // single plane
+    }
+  }
+
+  private Floor classifyState() {
+    int FRAGMENT_SIZE = 5;
+    List<Float> fragment;
+    List<Integer> dicisionByte = new ArrayList<>();
+    Log.d("asdff", "Slope: " + String.valueOf(Util.findRepresentativeValue(data.subList(0,6))));
+    if (Util.findRepresentativeValue(data.subList(0,6)) < -0.2f) {
+      Log.d("state", "down ");
+      return Floor.DOWN;
+    }
+
+    int prev = 0;
+    for(int i = 0; i < FRAME_DECISION_NUM / FRAGMENT_SIZE; i++) {
+      fragment = new ArrayList<>(data.subList(i * FRAGMENT_SIZE, (i + 1) * FRAGMENT_SIZE));
+
+      if (i == 0 && classifyFragment(fragment) == 0) {
+        Log.d("state", "plane");
+        return Floor.PLANE;
+      } else {
+        prev = 1;
+      }
+      dicisionByte.add(classifyFragment(fragment));
+    }
+
+    int bitChange = 0;
+    for(int j = 0; j < dicisionByte.size(); j++) {
+      int now = dicisionByte.get(j);
+      if( prev == now ) {
+        dicisionByte.remove(j);
+      } else {
+        bitChange++;
+      }
+      prev = now;
+    }
+    Log.d("state", "bitchange: "+String.valueOf(bitChange));
+
+    if (bitChange < 2) {
+      return Floor.WALL;
+    } else if (bitChange >= 2 && bitChange <= 5) {
+      return Floor.OBSTACLE;
+    } else if (bitChange > 6) {
+      return Floor.UP;
+    }
     return Floor.PLANE;
   }
 }

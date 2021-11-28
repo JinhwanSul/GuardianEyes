@@ -2,6 +2,7 @@ package com.google.ar.core.examples.java.helloar.util;
 
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 
 import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
@@ -34,8 +35,8 @@ public class State {
     }
 
     public void setWallstate(Floor state){
-        if(wallstate != state){
-//            feedbackWall(state);
+        if(!wallstate.equals(state)){
+            feedbackWall(state);
         }
         wallstate = state;
     }

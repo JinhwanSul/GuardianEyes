@@ -26,6 +26,13 @@ public class Util {
     return modifiedInput;
   }
 
+  public static double LinearSlope(List<Float> input) {
+    // TODO: implement this method
+    SimpleRegression simpleRegression = new SimpleRegression();
+    simpleRegression.addData(arrangePointsHelper(input));
+    return simpleRegression.getSlope();
+  }
+
   public static List<Float> arrangePoints(List<Float> input) {
     // TODO: implement this method
     SimpleRegression simpleRegression = new SimpleRegression();
@@ -47,7 +54,7 @@ public class Util {
     if (input.size() == 0) return -1.0f;
 
     float output = 0f;
-    Method method = Method.MEDIAN;
+    Method method = Method.MEAN;
     switch (method) {
       case MEAN:
         for (float f : input) output += f;
