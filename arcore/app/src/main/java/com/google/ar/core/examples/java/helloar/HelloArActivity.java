@@ -769,26 +769,21 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         obj.update(pos.tx() - cameraPos.tx(), pos.ty() - cameraPos.ty(), pos.tz() - cameraPos.tz());
 
         if(frame_count > DISCARD_FRAME_NUM && frame_count % FRAME_UNIT_NUM == 0) {
-//      float speed = obj.speed() / ((float)timeDif/(1000000000.0f));
-//          obj.filter();
           float speed = obj.speed();
-//          float angle = (float) Math.toDegrees(obj.angle());
           float angle = obj.angle();
 
-
-//      if(speed > 0.25f && angle > 150.0f)
           if(speed > 10f && angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
-            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0x0, 0x0);
+            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
           }
           else if(speed <= 10f && speed > 0) {
-            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0x00, 0x0, 0xff);
+            obj.setInfo("[" + id + "] " + speed + " " + angle, 0, 0, 0xff);
           }
           else {
-            drawText(render,"[" + id + "] " + speed + " " + angle, left, top, 0xff, 0xff, 0xff);
+            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
           }
-
           obj.clear();
         }
+        drawText(render,obj.getInfo(), left, top, obj.getRed(), obj.getGreen(), obj.getBlue());
 
         newMap.put(id, obj);
       }
@@ -920,7 +915,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private void configureSession() {
     Config config = session.getConfig();
-    config.setLightEstimationMode(Config.LightEstimationMode.ENVIRONMENTAL_HDR);
     if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
       config.setDepthMode(Config.DepthMode.AUTOMATIC);
     } else {

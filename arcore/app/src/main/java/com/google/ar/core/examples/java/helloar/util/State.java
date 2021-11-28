@@ -35,7 +35,7 @@ public class State {
 
     public void setWallstate(Floor state){
         if(wallstate != state){
-            feedbackWall(state);
+//            feedbackWall(state);
         }
         wallstate = state;
     }
