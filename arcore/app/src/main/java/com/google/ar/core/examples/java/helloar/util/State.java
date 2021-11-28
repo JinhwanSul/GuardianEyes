@@ -51,13 +51,19 @@ public class State {
     public void feedbackWall(int state){
         switch(state) {
             case UP:
-                tts.speak("올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                if(!tts.isSpeaking()) {
+                    tts.speak("올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                }
                 break;
             case DOWN:
-                tts.speak("내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                if(!tts.isSpeaking()) {
+                    tts.speak("내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                }
                 break;
             case WALL:
-                tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                if(!tts.isSpeaking()) {
+                    tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                }
                 break;
             case PLANE:
                 break;
