@@ -79,8 +79,10 @@ public class State {
 
     public void feedbackDangerouse(boolean danger){
         if (danger){
-            //feedbacl danger state
+            //feedback danger state
+            if(!tts.isSpeaking()) {
+                tts.speak("물체가 다가오고 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+            }
         }
-
     }
 }
