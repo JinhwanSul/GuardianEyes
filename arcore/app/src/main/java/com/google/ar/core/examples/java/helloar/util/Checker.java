@@ -147,11 +147,11 @@ public class Checker {
     int bitChange = 0;
     for(int j = 0; j < dicisionByte.size(); j++) {
       int now = dicisionByte.get(j);
-      if( prev == now ) {
-        dicisionByte.remove(j);
-      } else {
+
+      if(prev != now) {
         bitChange++;
       }
+
       prev = now;
     }
     Log.d("state", "bitchange: "+String.valueOf(bitChange));

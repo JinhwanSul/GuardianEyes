@@ -40,11 +40,13 @@ import androidx.core.util.Pair;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
+import com.google.ar.core.DepthPoint;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
+import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -747,22 +749,72 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     Map newMap = new HashMap<Integer, GuardObject>();
     Pose cameraPos = frame.getCamera().getPose();
 
+    final float areaRateW = 0.1f;
+    final float areaRateH = 0.1f;
+    final int checkPointIndexFrom = 4;
+    final int checkPointIndexTo = 5;
+
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
       int id = (int) box[4];
 
       float centerX = box[0] + box[2] / 2;
       float centerY = box[1] + box[3] / 2;
+      float lt = centerX - box[2] * areaRateW;
+      float rt = centerX + box[2] * areaRateW;
+      float tp = centerY - box[3] * areaRateH;
+      float bt = centerY + box[3] * areaRateH;
+
+      float[][] checkPoints = {
+        {lt,tp},
+        {lt,centerY},
+        {lt,bt},
+        {centerX,tp},
+        {centerX,centerY},
+        {centerX, bt},
+        {rt, tp},
+        {rt, centerY},
+        {rt, bt}
+      };
 
       float top = 2.0f * ((INPUT_SIZE - box[1]) / INPUT_SIZE) - 1.0f;
       float left = 2.0f * (box[0] / INPUT_SIZE) - 1.0f;
 
-      List<HitResult> hitResultList = frame.hitTest(centerX / INPUT_SIZE * w, centerY / INPUT_SIZE * h);
+      float[] baseTr = {0f,0f,0f};
+      float[] baseRt = {0f,0f,0f,1.0f};
+      int countOfValue = 0;
+      for(int idx = checkPointIndexFrom; idx < checkPointIndexTo; idx++) {
+        List<HitResult> hitResultList = frame.hitTest(checkPoints[i][0] / INPUT_SIZE * w, checkPoints[i][1] / INPUT_SIZE * h);
+        for (HitResult hit : hitResultList) {
+          Trackable trackable = hit.getTrackable();
+          if (trackable instanceof DepthPoint) {
+            DepthPoint pt = (DepthPoint) trackable;
+            Pose pos = hit.getHitPose();
+            baseTr[0] += pos.tx();
+            baseTr[1] += pos.ty();
+            baseTr[2] += pos.tz();
+            baseRt[0] += pos.qx();
+            baseRt[1] += pos.qy();
+            baseRt[2] += pos.qz();
+            baseRt[3] += pos.qw();
+            countOfValue++;
+            break;
+          }
+        }
+      }
+
 
       GuardObject obj = (GuardObject) objectMapper.get(id);
 
-      if(!hitResultList.isEmpty()) {
-        Pose pos = hitResultList.get(0).getHitPose();
+      if(countOfValue > 0) {
+        baseTr[0] /= countOfValue;
+        baseTr[1] /= countOfValue;
+        baseTr[2] /= countOfValue;
+        baseRt[0] /= countOfValue;
+        baseRt[1] /= countOfValue;
+        baseRt[2] /= countOfValue;
+        baseRt[3] /= countOfValue;
+        Pose pos = new Pose(baseTr, baseRt);
         if(obj == null)
           obj = new GuardObject(FRAME_UNIT_NUM);
 
