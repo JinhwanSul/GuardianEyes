@@ -24,23 +24,21 @@ def main(argv):
 
     num_rows = len(data)
     avg_seq = [[] for i in range(len(data[0]))]
-    avg_buf = [0 for i in range(len(data[0]))]
+    count = 10
+    avg_buf = [[0 for i in range(count)] for i in range(len(data[0]))]
 
     for i in range(len(data[0])):
-        count = 10
         #plt.plot([float(row[i]) for row in data], 'o', markersize=2, label=str(i))
-
         for j, row in enumerate(data):
-            avg_buf[i] += float(row[i])
-            if j % count == 0:
-                avg_buf[i] /= count
-                avg_seq[i].append(avg_buf[i])
+            avg_buf[i].append(float(row[i]))
+            avg_buf[i].pop(0)
+            avg_seq[i].append(sum(avg_buf[i]) / len(avg_buf[i]))
 
-            frame_num = range(0, len(data), count)
+            #frame_num = range(0, len(data), count)
 
        # print(len(avg_seq[i]))
        # print(len(frame_num))
-        plt.plot(frame_num, avg_seq[i],'o',markersize=5, label="avg:"+str(i))
+        plt.plot(avg_seq[i],'o',markersize=2, label="avg:"+str(i))
 
 
 
