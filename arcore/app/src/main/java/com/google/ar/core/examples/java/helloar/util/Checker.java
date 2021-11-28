@@ -86,22 +86,22 @@ public class Checker {
 
             if(res < avgHeight - threshold) {
               //Downstair
-              state.setWallstate(state.DOWN);
+              state.setWallstate(Floor.DOWN);
             }
             else if(res > avgHeight + threshold) { // Wall
               // Wall
-              state.setWallstate(state.WALL);
+              state.setWallstate(Floor.WALL);
             }
             else if(true) {
               // Upstair
-              state.setWallstate(state.UP);
+              state.setWallstate(Floor.UP);
             }
             else if(true) { // Obstacle
               // feedback
               //tts.speak("장애물 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
             else{
-              state.setWallstate(state.PLANE);
+              state.setWallstate(Floor.PLANE);
             }
 
             if(START_RECORDING) {

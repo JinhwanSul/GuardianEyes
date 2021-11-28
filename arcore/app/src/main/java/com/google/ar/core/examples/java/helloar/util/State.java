@@ -7,19 +7,18 @@ import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
 import java.util.Locale;
 
-public class State {
-    public final int PLANE = 0;
-    public final int WALL = 1;
-    public final int DOWN = 2;
-    public final int UP = 3;
+enum Floor{
+    PLANE, WALL, DOWN, UP, OBSTACLE;
+}
 
-    private int wallstate;
+public class State {
+    private Floor wallstate;
     private boolean dangerous;
 
     private TextToSpeech tts;
     private HelloArActivity context;
     public State(HelloArActivity context){
-        wallstate = 0;
+        wallstate = Floor.PLANE;
         dangerous = false;
         this.context = context;
         tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
@@ -34,7 +33,7 @@ public class State {
         tts.setSpeechRate(1.0f);
     }
 
-    public void setWallstate(int state){
+    public void setWallstate(Floor state){
         if(wallstate != state){
             feedbackWall(state);
         }
@@ -48,7 +47,7 @@ public class State {
         dangerous = danger;
     }
 
-    public void feedbackWall(int state){
+    public void feedbackWall(Floor state){
         switch(state) {
             case UP:
                 if(!tts.isSpeaking()) {
@@ -63,6 +62,11 @@ public class State {
             case WALL:
                 if(!tts.isSpeaking()) {
                     tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                }
+                break;
+            case OBSTACLE:
+                if(!tts.isSpeaking()) {
+                    tts.speak("장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 break;
             case PLANE:
