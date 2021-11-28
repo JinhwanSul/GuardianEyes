@@ -1,61 +1,23 @@
 # GuardianEyes
 
-## object detection
-- stair case dataset in YOLO format: https://akshayk07.weebly.com/real-time-stair-detection.html
-- stair_preprocess.py는 YOLO format dataset을 TFLite Model Maker에서 사용할 수 있는 형태인 stair.csv로 바꿔줍니다.
-- Model Maker Object Detection Tutorial Stair case.ipynb 는 TFLite 샐러드 감지 예제코드를 조금 수정한 것입니다. 
-- 참고 링크:  
-https://codelabs.developers.google.com/tflite-object-detection-android#8  
-https://www.youtube.com/watch?v=sarZ_FZfDxs
+A GuardianEyes app helps the walking amblyopia. It can detect object using tensorflow lite and measure distance using ARCore. Also, it detects the topography of the floor and distinguishes between walls and stairs.
 
-## Midterm presentation link
+가디언 아이즈 앱은 약시의 보행을 도와줍니다. 이 앱은 텐서 플로우 라이트 모델을 통해 물체를 감지하고 그것과의 거리를 ARCore를 통해 측정합니다. 또한 그것은 바닥의 지형을 감지하여 벽과 계단을 구분합니다.
 
+(앱 데모 사진)
 
+## Getting Started
+To install this app, you'll need the folling:
+- Android device over 29
+- Android Studio 4.1 or later
 
-3d sound feed back sdk 함수들입니다. 다음과 같은 run() { } 안에 넣어주면 될것같습니다
-        mGvrAudioEngine = new GvrAudioEngine(this, GvrAudioEngine.RenderingMode.BINAURAL_HIGH_QUALITY);
-        new Thread(
-            new Runnable() {
-                @Override
-                public void run() {
-                  여기
-                }
-            })
-        .start();
+## Tensorflow lite model
+We use this model
+(link)
+It can classfy a lot of object and detect it.
 
+## ARCore
+ARCore helps us that make 3D coordinate of the world. We can get the mobile phone and detected object's 3D coordinate. We can calculted between camera and object relative speed and height difference.
 
-
-
-
-
-            //사운드 파일은 다음을 호출하여 메모리에 미리 로드할 수 있습니다.
-            void gvr_audio_update(gvr_audio_context* api);
-            bool gvr_audio_preload_soundfile(gvr_audio_context* api,
-                                 const char* filename);
-
-            //사용하지 않은 사운드 파일은 다음을 호출하여 언로드할 수 있습니다.
-            void gvr_audio_unload_soundfile(gvr_audio_context* api,
-                                const char* filename);
-
-
-
-            gvr_audio_source_id
-            gvr_audio_create_sound_object(gvr_audio_context* api,
-                              const char* filename);
-
-
-
-            //이것은 다음 두 함수에 대한 호출을 통해 사운드 객체의 위치 및 볼륨과 같은 속성을 설정하는 데 사용할 수 있는 핸들을 반환합니다.
-            void
-            gvr_audio_set_sound_object_position(gvr_audio_context* api,
-                    gvr_audio_source_id sound_object_id,
-            float x, float y, float z);
-
-            void
-            gvr_audio_set_sound_volume(gvr_audio_context* api,
-                    gvr_audio_source_id source_id, float volume);
-
-            //리스너와의 거리에 따른 Sound Object의 동작은 다음 메서드를 호출하여 제어할 수 있습니다.
-            void gvr_audio_set_sound_object_distance_rolloff_model(
-                    gvr_audio_context* api, gvr_audio_source_id sound_object_id,
-                    int32_t rolloff_model, float min_distance, float max_distance);
+## Ultra sound sensor
+The ultrasonic sensor detects an object approaching from the angle of the camera.
