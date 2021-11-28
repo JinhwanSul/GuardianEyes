@@ -74,43 +74,20 @@ public class Checker {
             if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
 
             // TODO: Implement feedback of floor detection
-//            Vibrator vi = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-
             data.add(res);
             if(data.size() > FRAME_DECISION_NUM) {
-
-            }
-            else {
-
-            }
-
-            if(res < avgHeight - threshold) {
-              //Downstair
-              state.setWallstate(Floor.DOWN);
-            }
-            else if(res > avgHeight + threshold) { // Wall
-              // Wall
-              state.setWallstate(Floor.WALL);
-            }
-            else if(true) {
-              // Upstair
-              state.setWallstate(Floor.UP);
-            }
-            else if(true) { // Obstacle
-              // feedback
-              //tts.speak("장애물 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
-            }
-            else{
-              state.setWallstate(Floor.PLANE);
+              data.remove(0);
+              Floor st = classfyState();
+              state.setWallstate(st);
             }
 
-            if(START_RECORDING) {
-              if(dataString[num] == null) {
-                dataString[num] = Float.toString(res);
-              } else {
-                dataString[num] += "\n" + res;
-              }
-            }
+//            if(START_RECORDING) {
+//              if(dataString[num] == null) {
+//                dataString[num] = Float.toString(res);
+//              } else {
+//                dataString[num] += "\n" + res;
+//              }
+//            }
           }
 
           isHit = true;
@@ -122,16 +99,16 @@ public class Checker {
       if(!isHit) {
         if(num == 0) context.textView.setText("can't find proper surface");
 
-        if(START_RECORDING) {
-          if(dataString[num] == null) dataString[num] = "0.00";
-          else dataString[num] += "\n" + "0.00";
-        }
+//        if(START_RECORDING) {
+//          if(dataString[num] == null) dataString[num] = "0.00";
+//          else dataString[num] += "\n" + "0.00";
+//        }
       }
 
     }
   }
 
-  private int classfyState() {
-    return 0;
+  private Floor classfyState() {
+    return Floor.PLANE;
   }
 }

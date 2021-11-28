@@ -450,7 +450,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   public void onPause() {
     super.onPause();
 
-    dataSaver.saveData(checker.getSaveData());
+//    dataSaver.saveData(checker.getSaveData());
 
     if (session != null) {
       displayRotationHelper.onPause();
