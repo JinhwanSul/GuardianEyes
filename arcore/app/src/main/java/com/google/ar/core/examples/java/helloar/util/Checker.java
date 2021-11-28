@@ -17,8 +17,8 @@ public class Checker {
 
   private float width, height;
 
-  private float[] pointsX = {0.50f, 0.50f};
-  private float[] pointsY = {0.50f, 0.75f};
+  private float[] pointsX = {0.50f, 0.50f, 0.50f, 0.5f};
+  private float[] pointsY = {0.50f, 0.6f, 0.7f, 0.8f};
   private String[] dataString = new String[pointsX.length];
   private float avgHeight = 0, threshold = 0.2f;
   private final int averageCalculationFrameNum = 30;
@@ -33,7 +33,7 @@ public class Checker {
   private State state;
 
   // set this flag in order to start recording.
-  public boolean START_RECORDING = false;
+  public boolean START_RECORDING = true;
 
   public Checker(HelloArActivity context) {
     this.context = context;

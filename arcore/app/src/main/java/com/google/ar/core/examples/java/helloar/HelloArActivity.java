@@ -450,6 +450,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   public void onPause() {
     super.onPause();
 
+    dataSaver.saveData(checker.getSaveData());
+
     if (session != null) {
       displayRotationHelper.onPause();
       surfaceView.onPause();
@@ -597,6 +599,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       return;
     }
 
+    long curTime = System.nanoTime();
+
     // Texture names should only be set once on a GL thread unless they change. This is done during
     // onDrawFrame rather than onSurfaceCreated since the session is not guaranteed to have been
     // initialized during the execution of onSurfaceCreated.
@@ -716,6 +720,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
         if(camera.getTrackingState() == TrackingState.TRACKING) {
           frame_count++;
+
+          long timeDif = System.nanoTime() - curTime;
+          Log.d("asdf", frame_count + " " + timeDif);
         }
       }
     }
