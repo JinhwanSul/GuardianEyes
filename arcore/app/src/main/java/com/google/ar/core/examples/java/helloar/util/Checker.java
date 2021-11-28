@@ -10,6 +10,7 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -17,14 +18,17 @@ public class Checker {
 
   private float width, height;
 
-  private float[] pointsX = {0.50f, 0.50f, 0.50f, 0.5f};
-  private float[] pointsY = {0.50f, 0.6f, 0.7f, 0.8f};
+  private float[] pointsX = {0.50f};
+  private float[] pointsY = {0.50f};
   private String[] dataString = new String[pointsX.length];
   private float avgHeight = 0, threshold = 0.2f;
   private final int averageCalculationFrameNum = 30;
 
   private HelloArActivity context;
   private String[] saveData;
+
+  private List<Float> data;
+  private final int FRAME_DECISION_NUM = 60;
 
   // tts feedback
   //private TextToSpeech tts;
@@ -39,6 +43,7 @@ public class Checker {
     this.context = context;
     this.saveData = new String[pointsX.length];
     this.state = new State(context);
+    this.data = new ArrayList<>();
   }
 
   public String[] getSaveData() {
@@ -69,7 +74,16 @@ public class Checker {
             if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
 
             // TODO: Implement feedback of floor detection
-            Vibrator vi = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+//            Vibrator vi = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+
+            data.add(res);
+            if(data.size() > FRAME_DECISION_NUM) {
+
+            }
+            else {
+
+            }
+
             if(res < avgHeight - threshold) {
               //Downstair
               state.setWallstate(state.DOWN);
@@ -115,5 +129,9 @@ public class Checker {
       }
 
     }
+  }
+
+  private int classfyState() {
+    return 0;
   }
 }
