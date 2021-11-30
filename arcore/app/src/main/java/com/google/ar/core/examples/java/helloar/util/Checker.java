@@ -22,14 +22,20 @@ public class Checker {
   private float[] pointsX = {0.50f};
   private float[] pointsY = {0.50f};
   private String[] dataString = new String[pointsX.length];
-  private float avgHeight = 0, threshold = 0.2f;
-  private final int averageCalculationFrameNum = 30;
+  private float avgHeight = 0, threshold = 0.01f;
+  private float wallThr = 0.04f;
+  private final int averageCalculationFrameNum = 24;
 
   private HelloArActivity context;
   private String[] saveData;
 
   private List<Float> data;
-  private final int FRAME_DECISION_NUM = 60;
+  private final int FRAME_DECISION_NUM = 30;
+  private final int FRAGMENT_SIZE = 3;
+  private final int AVERAGE_SIZE = 5;
+
+  private int frame_count = 0;
+  private final int DISCARD_FRAME_NUM = 100;
 
   // tts feedback
   //private TextToSpeech tts;
@@ -49,7 +55,6 @@ public class Checker {
 
   public String[] getSaveData() {
     String[] record = dataString.clone();
-//    saveData = new String[pointsY.length];
     return record;
   }
 
@@ -64,32 +69,30 @@ public class Checker {
 
         if(trackable instanceof DepthPoint)
         {
+          frame_count++;
+
           float res = hit.getHitPose().ty() - camera.getPose().ty();
-          int frameNum = context.frame_count - context.DISCARD_FRAME_NUM;
+          int frameNum = frame_count - DISCARD_FRAME_NUM;
 
           if(frameNum > 0 && frameNum < averageCalculationFrameNum) { // frameCount 수만큼 평균 높이 구하기
             avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
             context.avgHeightTextView.setText("Average height : " + avgHeight + "m");
           }
-          else {
-            if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
+          else if(frameNum >= averageCalculationFrameNum) {
+//            if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
 
             // TODO: Implement feedback of floor detection
-            data.add(res - avgHeight);
-            if(data.size() > FRAME_DECISION_NUM) {
-              data.remove(0);
-              Floor st = classifyState();
-              Log.d("asdff", st.name());
-              state.setWallstate(st);
-            }
+            if(state.tts.isSpeaking()) {
+              data.clear();
+            } else {
+              data.add(res - avgHeight);
 
-//            if(START_RECORDING) {
-//              if(dataString[num] == null) {
-//                dataString[num] = Float.toString(res);
-//              } else {
-//                dataString[num] += "\n" + res;
-//              }
-//            }
+              if(data.size() > FRAME_DECISION_NUM + AVERAGE_SIZE - 1) {
+                data.remove(0);
+                Floor st = classifyState();
+                state.setWallstate(st);
+              }
+            }
           }
 
           isHit = true;
@@ -110,59 +113,74 @@ public class Checker {
     }
   }
 
+  private List<Float> averageList(List<Float> input) {
+    List<Float> res = new ArrayList<>();
+    float sum = 0;
+
+    for(int i = 0; i < AVERAGE_SIZE; ++i) {
+      sum += input.get(i);
+    }
+    res.add(sum / AVERAGE_SIZE);
+
+    for(int i = AVERAGE_SIZE; i < input.size(); ++i) {
+      sum -= input.get(i - AVERAGE_SIZE);
+      sum += input.get(i);
+      res.add(sum / AVERAGE_SIZE);
+    }
+
+    return res;
+  }
+
   private int classifyFragment(List<Float> dataFragment) {
-    Log.d("state", "dataFragement"+dataFragment.toString());
     double slope = Math.abs(Util.LinearSlope(dataFragment));
-    Log.d("state", "single slope"+String.valueOf(slope));
-    if (slope > 0.1) {
-      return 1; // single wall
+
+    if (slope > wallThr) {
+      return 2; // wall
+    } else if (slope > threshold) {
+      return 1; // obstacle or stair
     } else {
-      return 0; // single plane
+      return 0;
     }
   }
 
   private Floor classifyState() {
-    int FRAGMENT_SIZE = 5;
+    List<Float> avgData = averageList(data);
     List<Float> fragment;
-    List<Integer> dicisionByte = new ArrayList<>();
-    Log.d("asdff", "Slope: " + String.valueOf(Util.findRepresentativeValue(data.subList(0,6))));
-    if (Util.findRepresentativeValue(data.subList(0,6)) < -0.2f) {
-      Log.d("state", "down ");
+    List<Integer> decisionByte = new ArrayList<>();
+
+    if (Util.findRepresentativeValue(avgData) < -0.2f) {
       return Floor.DOWN;
     }
 
-    int prev = 0;
     for(int i = 0; i < FRAME_DECISION_NUM / FRAGMENT_SIZE; i++) {
-      fragment = new ArrayList<>(data.subList(i * FRAGMENT_SIZE, (i + 1) * FRAGMENT_SIZE));
-
-      if (i == 0 && classifyFragment(fragment) == 0) {
-        Log.d("state", "plane");
-        return Floor.PLANE;
-      } else {
-        prev = 1;
-      }
-      dicisionByte.add(classifyFragment(fragment));
+      fragment = new ArrayList<>(avgData.subList(i * FRAGMENT_SIZE, (i + 1) * FRAGMENT_SIZE));
+      decisionByte.add(classifyFragment(fragment));
     }
 
-    int bitChange = 0;
-    for(int j = 0; j < dicisionByte.size(); j++) {
-      int now = dicisionByte.get(j);
+    context.textView.setText(decisionByte.toString());
 
-      if(prev != now) {
+    if(decisionByte.get(0) == 0) return Floor.PLANE;
+
+    int prev = 1;
+    int bitChange = 0, wallCount = 0;
+    for(int j = 0; j < decisionByte.size(); j++) {
+      int now = decisionByte.get(j);
+      if (now == 2) {
+        wallCount++;
+      }
+
+      if((prev != 0 && now == 0) || (prev == 0 && now != 0)) {
         bitChange++;
       }
-
       prev = now;
     }
-    Log.d("state", "bitchange: "+String.valueOf(bitChange));
 
-    if (bitChange < 2) {
+    if (wallCount >= 2) {
       return Floor.WALL;
-    } else if (bitChange >= 2 && bitChange <= 5) {
-      return Floor.OBSTACLE;
-    } else if (bitChange > 6) {
+    } else if (wallCount == 0 && bitChange >= 3) {
       return Floor.UP;
     }
-    return Floor.PLANE;
+
+    return Floor.OBSTACLE;
   }
 }

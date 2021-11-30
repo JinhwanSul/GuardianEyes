@@ -16,7 +16,7 @@ public class State {
     private Floor wallstate;
     private boolean dangerous;
 
-    private TextToSpeech tts;
+    public TextToSpeech tts;
     private HelloArActivity context;
     public State(HelloArActivity context){
         wallstate = Floor.PLANE;
@@ -31,7 +31,7 @@ public class State {
             }
         });
         tts.setPitch(1.0f);
-        tts.setSpeechRate(1.0f);
+        tts.setSpeechRate(0.8f);
     }
 
     public void setWallstate(Floor state){
@@ -52,22 +52,22 @@ public class State {
         switch(state) {
             case UP:
                 if(!tts.isSpeaking()) {
-                    tts.speak("올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 break;
             case DOWN:
                 if(!tts.isSpeaking()) {
-                    tts.speak("내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 break;
             case WALL:
                 if(!tts.isSpeaking()) {
-                    tts.speak("벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 break;
             case OBSTACLE:
                 if(!tts.isSpeaking()) {
-                    tts.speak("장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 break;
             case PLANE:
