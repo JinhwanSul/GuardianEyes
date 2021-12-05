@@ -851,7 +851,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     objectMapper.forEach((key, value) -> {
       if (!newMap.containsKey(key)) {
         GuardObject obj = (GuardObject) value;
-        sound.stop3DSound(obj.getSndId());
+        if(obj.decTolerance() <= 0) {
+          sound.stop3DSound(obj.getSndId());
+        }
+        else {
+          newMap.put(key, value);
+        }
+      }
+      else {
+        GuardObject obj = (GuardObject) value;
+        obj.setTolerance(3);
       }
     });
     objectMapper = newMap;
@@ -898,7 +907,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     Rect rect = new Rect();
     textPaint.getTextBounds(str, 0, str.length(), rect);
 
-    Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
+    Bitmap bitmap = Bitmap.createBitmap(rect.right + 5, rect.height(), Bitmap.Config.ARGB_8888);
     Canvas canvas = new Canvas(bitmap);
 //    bitmap.eraseColor(Color.TRANSPARENT);
     canvas.drawText(str,rect.left,-rect.top,textPaint);

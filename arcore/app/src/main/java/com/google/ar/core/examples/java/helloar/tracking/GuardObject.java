@@ -13,6 +13,7 @@ public class GuardObject {
 //  private float x, y, z, dx, dy ,dz;
   public List<Float> x, y, z;
 //  dx, dy, dz;
+  private int tolerance;
   private int count;
   private int unit;
   private int soundId;
@@ -26,6 +27,19 @@ public class GuardObject {
     red = r;
     green = g;
     blue = b;
+  }
+
+  public void setTolerance(int tolerance) {
+    this.tolerance = tolerance;
+  }
+
+  public int getTolerance() {
+    return tolerance;
+  }
+
+  public int decTolerance() {
+    tolerance-= 1;
+    return tolerance;
   }
 
   public void setSndId(int num) { soundId = num; }
