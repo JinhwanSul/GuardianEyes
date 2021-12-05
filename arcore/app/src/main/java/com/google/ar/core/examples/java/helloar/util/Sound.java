@@ -9,7 +9,7 @@ import com.google.vr.sdk.audio.GvrAudioEngine;
 
 public class Sound {
 
-  private String SOUND_FILE = "beep_01.wav";
+  private String SOUND_FILE = "air.wav";
   private String SOUND_FILE2 = "beep_03.wav";
 
   public GvrAudioEngine mGvrAudioEngine;
@@ -25,7 +25,7 @@ public class Sound {
     }).start();
   }
 
-  final private float amplitude = 7.5f;
+  final private float amplitude = 3.0f;
 
   public int make3Dsound(float x, float y, float z, int num){
     //this is sound module, what function take this module?
