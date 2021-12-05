@@ -824,14 +824,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           float speed = obj.speed();
           float angle = obj.angle();
 
-          if(speed > 10f && angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
+          if(angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
 //            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
-            obj.setInfo("[" + id + "] " + title, 0xff, 0, 0);
-            checkDangerous = true;
-          }
-          else if(speed <= 10f && speed > 0) {
-//            obj.setInfo("[" + id + "] " + speed + " " + angle, 0, 0, 0xff);
-            obj.setInfo("[" + id + "] " + title, 0, 0, 0xff);
+            if(speed > 10f) {
+              obj.setInfo("[" + id + "] " + title, 0xff, 0, 0);
+              checkDangerous = true;
+            }
+            else
+              obj.setInfo("[" + id + "] " + title, 0, 0, 0xff);
           }
           else {
 //            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
