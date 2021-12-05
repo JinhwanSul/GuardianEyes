@@ -14,7 +14,7 @@ To install this app, you'll need the folling:
 ## Tensorflow lite model
 We use this model
 (link)
-It can classfy a lot of object and detect it.
+It can classify a lot of object and detect it.
 
 ## ARCore
 ARCore helps us that make 3D coordinate of the world. We can get the mobile phone and detected object's 3D coordinate. We can calculted between camera and object relative speed and height difference.
