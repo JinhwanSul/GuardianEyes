@@ -531,6 +531,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       boxMesh = new Mesh(render, Mesh.PrimitiveMode.LINE_LOOP, null, boxVertexBuffers);
 
       boxTexShader = Shader.createFromAssets(render, "shaders/boxTex.vert", "shaders/boxTex.frag", null);
+      boxTexShader.setBlend(Shader.BlendFactor.ONE, Shader.BlendFactor.ONE_MINUS_SRC_ALPHA);
       boxTexVertexBuffer = new VertexBuffer(render, 4, null);
       final VertexBuffer[] boxTexVertexBuffers = {boxTexVertexBuffer};
       boxTexMesh = new Mesh(render, Mesh.PrimitiveMode.TRIANGLE_STRIP, null, boxTexVertexBuffers);

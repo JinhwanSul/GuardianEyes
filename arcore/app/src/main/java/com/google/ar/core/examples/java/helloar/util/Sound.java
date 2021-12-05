@@ -43,7 +43,7 @@ public class Sound {
     mGvrAudioEngine.setSoundObjectPosition(soundId, x*amplitude, y*amplitude, z*amplitude);
     mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
     mGvrAudioEngine.playSound(soundId,true); //loop playback
-    mGvrAudioEngine.setSoundVolume(soundId, 1.5f);
+    mGvrAudioEngine.setSoundVolume(soundId, 2.0f);
     return soundId;
   }
 
