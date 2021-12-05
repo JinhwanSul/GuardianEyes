@@ -9,7 +9,7 @@ import com.google.vr.sdk.audio.GvrAudioEngine;
 
 public class Sound {
 
-  private String SOUND_FILE = "beep_01.wav";
+  private String SOUND_FILE = "interval_beep.wav";
   private String SOUND_FILE2 = "beep_03.wav";
 
   public GvrAudioEngine mGvrAudioEngine;
@@ -25,7 +25,7 @@ public class Sound {
     }).start();
   }
 
-  final private float amplitude = 7.5f;
+  final private float amplitude = 1.0f;
 
   public int make3Dsound(float x, float y, float z, int num){
     //this is sound module, what function take this module?
@@ -42,7 +42,7 @@ public class Sound {
     mGvrAudioEngine.setSoundObjectPosition(soundId, x*amplitude, y*amplitude, z*amplitude);
     mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
     mGvrAudioEngine.playSound(soundId,true); //loop playback
-//    mGvrAudioEngine.setSoundVolume(soundId, 0.5f);
+    mGvrAudioEngine.setSoundVolume(soundId, 1.5f);
     return soundId;
   }
 

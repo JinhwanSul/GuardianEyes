@@ -839,7 +839,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
-    checker.alarmObject(checkDangerous);
+//    checker.alarmObject(checkDangerous);
 
     //check released object
     objectMapper.forEach((key, value) -> {
