@@ -1,6 +1,7 @@
 package com.google.ar.core.examples.java.helloar.util;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
@@ -18,6 +19,8 @@ public class State {
 
     public TextToSpeech tts;
     private HelloArActivity context;
+    private Bundle ttsBundle;
+
     public State(HelloArActivity context){
         wallstate = Floor.PLANE;
         dangerous = false;
@@ -32,6 +35,9 @@ public class State {
         });
         tts.setPitch(1.0f);
         tts.setSpeechRate(0.8f);
+
+        ttsBundle = new Bundle();
+        ttsBundle.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0.8f);
     }
 
     public void setWallstate(Floor state){
@@ -53,22 +59,22 @@ public class State {
         switch(state) {
             case UP:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case DOWN:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case WALL:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 벽이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case OBSTACLE:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak("전방에 장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case PLANE:
@@ -82,7 +88,7 @@ public class State {
         if (danger){
             //feedback danger state
             if(!tts.isSpeaking()) {
-                tts.speak("물체가 다가오고 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
+//                tts.speak("물체가 다가오고 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
         }
     }

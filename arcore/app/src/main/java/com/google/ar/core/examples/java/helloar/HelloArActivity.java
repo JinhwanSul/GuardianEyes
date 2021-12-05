@@ -835,7 +835,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           }
           else {
 //            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
-            obj.setInfo("[" + id + "] " + title, 0xff, 0xff, 0xff);
+            obj.setInfo("[" + id + "] " + title, 0x00, 0x00, 0x00);
           }
           obj.clear();
         }
@@ -890,18 +890,19 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private void drawText(SampleRender render, String str, float x, float y, int r, int g, int b) {
 
     Paint textPaint = new Paint();
-    textPaint.setTextSize(32);
+    textPaint.setTextSize(50);
     textPaint.setAntiAlias(true);
     textPaint.setARGB(0xff, r, g, b);
     textPaint.setTextAlign(Paint.Align.LEFT);
 //    textPaint.setTextScaleX(0.5f);
     Rect rect = new Rect();
+//    str += "   ";
     textPaint.getTextBounds(str, 0, str.length(), rect);
 
     Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
     Canvas canvas = new Canvas(bitmap);
 //    bitmap.eraseColor(Color.TRANSPARENT);
-    canvas.drawText(str,rect.left,-rect.top,textPaint);
+    canvas.drawText(str, rect.left, -rect.top,textPaint);
 
     float width = (float)(rect.width())/480.0f;
     float height = (float)(rect.height())/640.0f;

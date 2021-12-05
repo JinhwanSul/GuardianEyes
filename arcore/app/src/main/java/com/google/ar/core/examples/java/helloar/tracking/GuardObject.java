@@ -19,7 +19,7 @@ public class GuardObject {
   final private int FRAME_INTERVAL=15;
 
   private String info = "Collecting info";
-  private int red = 0xff, green = 0xff, blue = 0xff;
+  private int red = 0x00, green = 0x00, blue = 0x00;
 
   public void setInfo(String str, int r, int g, int b) {
     info = str;

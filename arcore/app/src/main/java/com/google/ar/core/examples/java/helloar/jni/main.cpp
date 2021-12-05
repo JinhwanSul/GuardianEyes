@@ -46,7 +46,7 @@ set<int> allItems;
 set<int> matchedItems;
 
 int frame_count = 0;
-int max_age = 1;
+int max_age = 3;
 int min_hits = 3;
 int trkNum = 0;
 int detNum = 0;
