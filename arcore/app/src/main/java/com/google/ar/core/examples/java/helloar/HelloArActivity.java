@@ -17,6 +17,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.media.Image;
 import android.net.Uri;
 import android.opengl.GLES30;
@@ -827,15 +828,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           if(angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
 //            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
             if(speed > 10f) {
-              obj.setInfo("[" + id + "] " + title, 0xff, 0, 0);
+              obj.setInfo(id + ". " + title, 0xff, 0, 0);
               checkDangerous = true;
             }
             else
-              obj.setInfo("[" + id + "] " + title, 0, 0, 0xff);
+              obj.setInfo(id + ". " + title, 0, 0, 0xff);
           }
           else {
 //            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
-            obj.setInfo("[" + id + "] " + title, 0x00, 0x00, 0x00);
+            obj.setInfo(id + ". " + title, 0x00, 0x00, 0x00);
           }
           obj.clear();
         }
@@ -868,7 +869,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   private void drawResultRect(SampleRender render) {
-    GLES30.glLineWidth(8.0f);
+    GLES30.glLineWidth(12.0f);
 
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
@@ -899,19 +900,20 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private void drawText(SampleRender render, String str, float x, float y, int r, int g, int b) {
 
     Paint textPaint = new Paint();
-    textPaint.setTextSize(50);
+    textPaint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+    textPaint.setTextSize(45);
     textPaint.setAntiAlias(true);
     textPaint.setARGB(0xff, r, g, b);
     textPaint.setTextAlign(Paint.Align.LEFT);
-//    textPaint.setTextScaleX(0.5f);
+    textPaint.setTextScaleX(1.2f);
     Rect rect = new Rect();
 //    str += "   ";
     textPaint.getTextBounds(str, 0, str.length(), rect);
 
-    Bitmap bitmap = Bitmap.createBitmap(rect.right + 5, rect.height(), Bitmap.Config.ARGB_8888);
+    Bitmap bitmap = Bitmap.createBitmap(rect.right + 20, rect.height() + 15, Bitmap.Config.ARGB_8888);
     Canvas canvas = new Canvas(bitmap);
 //    bitmap.eraseColor(Color.TRANSPARENT);
-    canvas.drawText(str, rect.left, -rect.top,textPaint);
+    canvas.drawText(str, rect.left + 15, -rect.top + 15, textPaint);
 
     float width = (float)(rect.width())/480.0f;
     float height = (float)(rect.height())/640.0f;
