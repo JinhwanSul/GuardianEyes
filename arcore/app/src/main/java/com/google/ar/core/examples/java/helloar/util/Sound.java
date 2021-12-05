@@ -25,7 +25,11 @@ public class Sound {
     }).start();
   }
 
+<<<<<<< HEAD
   final private float amplitude = 3.0f;
+=======
+  final private float amplitude = 1.0f;
+>>>>>>> 7c25548ccc2479ee55095da4a52852e78054b94e
 
   public int make3Dsound(float x, float y, float z, int num){
     //this is sound module, what function take this module?
@@ -42,7 +46,7 @@ public class Sound {
     mGvrAudioEngine.setSoundObjectPosition(soundId, x*amplitude, y*amplitude, z*amplitude);
     mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
     mGvrAudioEngine.playSound(soundId,true); //loop playback
-//    mGvrAudioEngine.setSoundVolume(soundId, 0.5f);
+    mGvrAudioEngine.setSoundVolume(soundId, 1.5f);
     return soundId;
   }
 
