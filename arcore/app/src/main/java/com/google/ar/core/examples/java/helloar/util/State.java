@@ -37,6 +37,7 @@ public class State {
     public void setWallstate(Floor state){
         if(!wallstate.equals(state)){
             feedbackWall(state);
+            context.textView.setText(state.name());
         }
         wallstate = state;
     }

@@ -13,7 +13,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.media.Image;
 import android.net.Uri;
@@ -369,7 +371,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                 } catch (IOException e) {
                   try {
                     fail = true;
-                    Log.d(TAG, e.toString());
+//                    Log.d(TAG, e.toString());
                     mBTSocket.close();
                     mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
                             .sendToTarget();
@@ -745,6 +747,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
+      String title = trackingResults.titles.get(i);
       int id = (int) box[4];
 
       float centerX = box[0] + box[2] / 2;
@@ -792,7 +795,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         }
       }
 
-
       GuardObject obj = (GuardObject) objectMapper.get(id);
 
       if(countOfValue > 0) {
@@ -822,14 +824,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           float angle = obj.angle();
 
           if(speed > 10f && angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
-            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
+//            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
+            obj.setInfo("[" + id + "] " + title, 0xff, 0, 0);
             checkDangerous = true;
           }
           else if(speed <= 10f && speed > 0) {
-            obj.setInfo("[" + id + "] " + speed + " " + angle, 0, 0, 0xff);
+//            obj.setInfo("[" + id + "] " + speed + " " + angle, 0, 0, 0xff);
+            obj.setInfo("[" + id + "] " + title, 0, 0, 0xff);
           }
           else {
-            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
+//            obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0xff, 0xff);
+            obj.setInfo("[" + id + "] " + title, 0xff, 0xff, 0xff);
           }
           obj.clear();
         }
@@ -894,7 +899,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
     Canvas canvas = new Canvas(bitmap);
-    bitmap.eraseColor(0);
+//    bitmap.eraseColor(Color.TRANSPARENT);
     canvas.drawText(str,rect.left,-rect.top,textPaint);
 
     float width = (float)(rect.width())/480.0f;

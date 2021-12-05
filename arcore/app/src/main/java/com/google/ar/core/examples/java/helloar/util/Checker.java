@@ -161,7 +161,7 @@ public class Checker {
       decisionByte.add(classifyFragment(fragment));
     }
 
-    context.textView.setText(decisionByte.toString());
+//    context.textView.setText(decisionByte.toString());
 
     if(decisionByte.get(0) == 0) return Floor.PLANE;
 
