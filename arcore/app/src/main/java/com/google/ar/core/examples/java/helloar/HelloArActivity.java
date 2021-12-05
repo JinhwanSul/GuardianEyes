@@ -6,7 +6,6 @@ import static android.Manifest.permission.BLUETOOTH_ADMIN;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -35,7 +34,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.util.Pair;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -76,7 +74,6 @@ import com.google.ar.core.examples.java.helloar.util.DataSaver;
 import com.google.ar.core.examples.java.helloar.tracking.GuardObject;
 import com.google.ar.core.examples.java.helloar.util.Recording;
 import com.google.ar.core.examples.java.helloar.util.Sound;
-import com.google.ar.core.examples.java.helloar.util.Util;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -94,11 +91,13 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
 
@@ -126,9 +125,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
   private TextView arduinoTextView;
-
   public TextView textView;
   public TextView avgHeightTextView;
+  private TextView fpsTextView;
 
   private boolean installRequested;
 
@@ -192,7 +191,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
 
   private Map objectMapper = new HashMap<Integer, GuardObject>();
-  private long prevTime = System.nanoTime();
 
   private List<Detector.Recognition> detectResult;
   private TrackingResult trackingResults;
@@ -235,6 +233,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     textView = findViewById(R.id.text_view);
     avgHeightTextView = findViewById(R.id.avg_height_text_view);
     arduinoTextView = findViewById(R.id.arduioTextView);
+    fpsTextView = findViewById(R.id.FPSTextView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
     // Set up renderer.
@@ -336,11 +335,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           public void handleMessage(Message msg){
             if(msg.what == MESSAGE_READ){
               String readMessage = null;
-              try {
-                readMessage = new String((byte[]) msg.obj, "UTF-8");
-              } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-              }
+              readMessage = new String((byte[]) msg.obj, StandardCharsets.UTF_8);
               arduinoTextView.setText(readMessage.split("cm")[0]);
             }
 
@@ -601,6 +596,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       return;
     }
 
+    long startTime = System.nanoTime();
+
     // Texture names should only be set once on a GL thread unless they change. This is done during
     // onDrawFrame rather than onSurfaceCreated since the session is not guaranteed to have been
     // initialized during the execution of onSurfaceCreated.
@@ -708,12 +705,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         detectResult = myObjectdetector.getResults(bitmapImage);
         trackingResults = tracker.objectTracking(detectResult);
 
-        drawResultRects(render);
+        drawResultRect(render);
         findVector(frame, render, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
 
-        // TODO: 그래프 그릴 수 있게 데이터 저장하는 로직 만들기
-        // 데이터를 저장하려면 checker.START_RECORDING = true 를 해주면 된다.
-        // 데이터는 checker.getSaveData 로 받아올 수 있다. 이를 dataSaver을 이용해 저장하자.
         checker.checkWallOrHole(frame, camera, virtualSceneFramebuffer.getWidth(), virtualSceneFramebuffer.getHeight());
 
         cameraImage.close();
@@ -731,16 +725,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             camera.getDisplayOrientedPose(),
             projectionMatrix
     );
+
+    runOnUiThread(() -> {
+      long elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+      int fps = (int) (1000 / elapsedTime);
+      fpsTextView.setText(Integer.toString(fps));
+    });
   }
 
   private void findVector(Frame frame, SampleRender render, float w, float h) {
-    // TODO: 그래프 그릴 수 있게 데이터 만들고 저장하기
-    // 데이터 가공 로직 만들기 + dataSaver로 저장하기
-
-//    long curTime = System.nanoTime();
-//    long timeDif = curTime - prevTime;
-//    prevTime = curTime;
-
     Map newMap = new HashMap<Integer, GuardObject>();
     Pose cameraPos = frame.getCamera().getPose();
 
@@ -859,7 +852,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     sound.update();
   }
 
-  private void drawResultRects(SampleRender render) {
+  private void drawResultRect(SampleRender render) {
     GLES30.glLineWidth(8.0f);
 
     for(int i = 0; i < trackingResults.size(); ++i) {
