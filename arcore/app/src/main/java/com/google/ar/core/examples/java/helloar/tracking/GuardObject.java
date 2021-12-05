@@ -15,6 +15,7 @@ public class GuardObject {
 //  dx, dy, dz;
   private int count;
   private int unit;
+  private int soundId;
   final private int FRAME_INTERVAL=15;
 
   private String info = "Collecting info";
@@ -26,6 +27,10 @@ public class GuardObject {
     green = g;
     blue = b;
   }
+
+  public void setSndId(int num) { soundId = num; }
+
+  public int getSndId() { return soundId; }
 
   public String getInfo() {
     return info;

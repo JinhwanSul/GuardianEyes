@@ -25,7 +25,7 @@ public class Sound {
     }).start();
   }
 
-  public void make3Dsound(Pose pos, int num){
+  public int make3Dsound(float x, float y, float z, int num){
     //this is sound module, what function take this module?
     int soundId;
 
@@ -37,10 +37,21 @@ public class Sound {
         soundId = mGvrAudioEngine.createSoundObject(SOUND_FILE2);
     }
 
-    float[] translation = new float[3];
-    pos.getTranslation(translation, 0);
-    mGvrAudioEngine.setSoundObjectPosition(soundId, translation[0], translation[1], translation[2]);
-    mGvrAudioEngine.playSound(soundId,false); //loop playback
+    mGvrAudioEngine.setSoundObjectPosition(soundId, x, y, z);
     mGvrAudioEngine.setSoundObjectDistanceRolloffModel(soundId, GvrAudioEngine.DistanceRolloffModel.LOGARITHMIC,0,4);
+    mGvrAudioEngine.playSound(soundId,true); //loop playback
+    return soundId;
+  }
+
+  public void updatePos(int num, float x, float y, float z) {
+    mGvrAudioEngine.setSoundObjectPosition(num, x, y, z);
+  }
+
+  public void stop3DSound(int num) {
+    mGvrAudioEngine.stopSound(num);
+  }
+
+  public void update() {
+    mGvrAudioEngine.update();
   }
 }

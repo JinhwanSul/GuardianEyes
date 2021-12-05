@@ -748,6 +748,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     final float areaRateH = 0.1f;
     final int checkPointIndexFrom = 4;
     final int checkPointIndexTo = 5;
+    boolean checkDangerous = false;
 
     for(int i = 0; i < trackingResults.size(); ++i) {
       float[] box = trackingResults.boxResults.get(i); // box : [x, y, width, height, id, frame_count]
@@ -810,10 +811,18 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         baseRt[2] /= countOfValue;
         baseRt[3] /= countOfValue;
         Pose pos = new Pose(baseTr, baseRt);
-        if(obj == null)
+        float posX = pos.tx() - cameraPos.tx();
+        float posY = pos.ty() - cameraPos.ty();
+        float posZ = pos.tz() - cameraPos.tz();
+        if(obj == null) {
           obj = new GuardObject(FRAME_UNIT_NUM);
-
-        obj.update(pos.tx() - cameraPos.tx(), pos.ty() - cameraPos.ty(), pos.tz() - cameraPos.tz());
+          int sndId = sound.make3Dsound(posX, posY, posZ, 1);
+          obj.setSndId(sndId);
+        }
+        else {
+          obj.update(pos.tx() - cameraPos.tx(), pos.ty() - cameraPos.ty(), pos.tz() - cameraPos.tz());
+          sound.updatePos(obj.getSndId(), posX, posY, posZ);
+        }
 
         if(frame_count > DISCARD_FRAME_NUM && frame_count % FRAME_UNIT_NUM == 0) {
           float speed = obj.speed();
@@ -821,6 +830,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
           if(speed > 10f && angle < Math.cos(Math.PI / 180.0f * 150.0f)) {
             obj.setInfo("[" + id + "] " + speed + " " + angle, 0xff, 0, 0);
+            checkDangerous = true;
           }
           else if(speed <= 10f && speed > 0) {
             obj.setInfo("[" + id + "] " + speed + " " + angle, 0, 0, 0xff);
@@ -836,7 +846,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     }
 
+    checker.alarmObject(checkDangerous);
+
+    //check released object
+    objectMapper.forEach((key, value) -> {
+      if (!newMap.containsKey(key)) {
+        GuardObject obj = (GuardObject) value;
+        sound.stop3DSound(obj.getSndId());
+      }
+    });
     objectMapper = newMap;
+    sound.update();
   }
 
   private void drawResultRects(SampleRender render) {

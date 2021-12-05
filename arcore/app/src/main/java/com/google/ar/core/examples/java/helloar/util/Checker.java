@@ -143,6 +143,10 @@ public class Checker {
     }
   }
 
+  public void alarmObject(boolean danger) {
+    state.setDangerous(danger);
+  }
+
   private Floor classifyState() {
     List<Float> avgData = averageList(data);
     List<Float> fragment;
