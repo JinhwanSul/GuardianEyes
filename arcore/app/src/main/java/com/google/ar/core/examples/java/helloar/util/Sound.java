@@ -9,7 +9,7 @@ import com.google.vr.sdk.audio.GvrAudioEngine;
 
 public class Sound {
 
-  private String SOUND_FILE = "interval_beep.wav";
+  private String SOUND_FILE = "beep_fade.wav";
   private String SOUND_FILE2 = "beep_03.wav";
 
   public GvrAudioEngine mGvrAudioEngine;
