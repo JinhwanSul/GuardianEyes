@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 31
     defaultConfig {
-        applicationId "com.google.ar.core.examples.java.helloar"
+        applicationId "com.snu.mobile.computing.guardianeyes.java.main"
 
         // AR Optional apps must declare minSdkVersion >= 14.
         // AR Required apps must declare minSdkVersion >= 24.
@@ -31,7 +31,7 @@ android {
     ndkVersion "23.1.7779620"
     externalNativeBuild {
         ndkBuild {
-            path 'src/main/java/com/google/ar/core/examples/java/helloar/jni/Android.mk'
+            path 'src/main/java/com/snu/mobile/computing/guardianeyes/java/main/jni/Android.mk'
         }
     }
     androidResources {
