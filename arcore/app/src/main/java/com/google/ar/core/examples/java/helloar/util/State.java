@@ -59,12 +59,12 @@ public class State {
         switch(state) {
             case UP:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 올라가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
+                    tts.speak("전방에 올라가는 길이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case DOWN:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 내려가는 계단이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
+                    tts.speak("전방에 내려가는 길이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case WALL:
@@ -74,7 +74,7 @@ public class State {
                 break;
             case OBSTACLE:
                 if(!tts.isSpeaking()) {
-                    tts.speak("전방에 장애물이 있습니다.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
+                    tts.speak("장애물이 있습니다. 조심하세요.", TextToSpeech.QUEUE_FLUSH, ttsBundle, null);
                 }
                 break;
             case PLANE:

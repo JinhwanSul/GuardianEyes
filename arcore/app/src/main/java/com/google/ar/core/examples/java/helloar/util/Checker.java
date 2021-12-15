@@ -11,7 +11,10 @@ import com.google.ar.core.HitResult;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.examples.java.helloar.HelloArActivity;
 
+import org.checkerframework.checker.units.qual.A;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -30,12 +33,14 @@ public class Checker {
   private String[] saveData;
 
   private List<Float> data;
-  private final int FRAME_DECISION_NUM = 30;
+  private final int FRAME_DECISION_NUM = 15;
   private final int FRAGMENT_SIZE = 3;
   private final int AVERAGE_SIZE = 5;
 
   private int frame_count = 0;
-  private final int DISCARD_FRAME_NUM = 100;
+  private final int DISCARD_FRAME_NUM = 30;
+
+  private float slopeThreshold = 0.01f;
 
   // tts feedback
   //private TextToSpeech tts;
@@ -75,21 +80,22 @@ public class Checker {
           int frameNum = frame_count - DISCARD_FRAME_NUM;
 
           if(frameNum > 0 && frameNum < averageCalculationFrameNum) { // frameCount 수만큼 평균 높이 구하기
-            avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
-            context.avgHeightTextView.setText("Average height : " + avgHeight + "m");
+//            avgHeight = (avgHeight * frameNum + res) / (frameNum + 1);
+//            context.avgHeightTextView.setText("Average height : " + avgHeight + "m");
+            context.avgHeightTextView.setText("Loading...");
           }
           else if(frameNum >= averageCalculationFrameNum) {
 //            if(num == 0) context.textView.setText("Height difference : " + res + "m"); // 중점의 경우를 화면에 출력
+            context.avgHeightTextView.setText("Executing...");
 
             // TODO: Implement feedback of floor detection
             if(state.tts.isSpeaking()) {
               data.clear();
             } else {
-              data.add(res - avgHeight);
-
-              if(data.size() > FRAME_DECISION_NUM + AVERAGE_SIZE - 1) {
+              data.add(res);
+              if(data.size() > FRAME_DECISION_NUM) {
                 data.remove(0);
-                Floor st = classifyState();
+                Floor st = classify(data);
                 state.setWallstate(st);
               }
             }
@@ -102,8 +108,8 @@ public class Checker {
 
       // Surface가 탐지되지 않아 hit한 점이 없을 때
       if(!isHit) {
-        if(num == 0) context.textView.setText("can't find proper surface");
-
+        data.clear();
+        if(num == 0) context.avgHeightTextView.setText("No Plane Detected");
 //        if(START_RECORDING) {
 //          if(dataString[num] == null) dataString[num] = "0.00";
 //          else dataString[num] += "\n" + "0.00";
@@ -111,6 +117,51 @@ public class Checker {
       }
 
     }
+  }
+
+  private List<Float> medianFilter(List<Float> input, int size) {
+    List<Float> res = new ArrayList<>();
+    for(int i = 0; i < input.size(); ++i) {
+      int half = size / 2;
+      int start = Math.max(0, i - half);
+      int end = Math.min(input.size() - 1, i + half);
+
+      List<Float> subList = input.subList(start, end + 1);
+      subList.sort(Comparator.naturalOrder());
+
+      res.add(subList.get(subList.size() / 2));
+    }
+    return res;
+  }
+
+  private List<Integer> roundList(List<Float> input) {
+    List<Integer> res = new ArrayList<>();
+    for(float i : input) {
+      res.add(Math.round(i));
+    }
+    return res;
+  }
+
+  private int increasing(List<Integer> input) {
+    int cnt = 1;
+    for(int i = 0; i < input.size() - 1; ++i) {
+      if(input.get(i + 1) < input.get(i))
+        return -1;
+      if(input.get(i + 1) > input.get(i))
+        cnt++;
+    }
+    return cnt;
+  }
+
+  private Floor classify(List<Float> input) {
+    input = averageList(input);
+    double slope = Util.LinearSlope(input);
+
+    if(slope > slopeThreshold)
+      return Floor.OBSTACLE;
+    else if(input.get(0) - input.get(input.size() - 1) > 0.2f)
+      return Floor.DOWN;
+    return Floor.PLANE;
   }
 
   private List<Float> averageList(List<Float> input) {
@@ -160,8 +211,6 @@ public class Checker {
       fragment = new ArrayList<>(avgData.subList(i * FRAGMENT_SIZE, (i + 1) * FRAGMENT_SIZE));
       decisionByte.add(classifyFragment(fragment));
     }
-
-//    context.textView.setText(decisionByte.toString());
 
     if(decisionByte.get(0) == 0) return Floor.PLANE;
 
