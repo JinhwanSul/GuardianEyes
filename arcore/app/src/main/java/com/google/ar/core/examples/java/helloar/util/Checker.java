@@ -40,7 +40,7 @@ public class Checker {
   private int frame_count = 0;
   private final int DISCARD_FRAME_NUM = 30;
 
-  private float slopeThreshold = 0.01f;
+  private float slopeThreshold = 0.02f;
 
   // tts feedback
   //private TextToSpeech tts;

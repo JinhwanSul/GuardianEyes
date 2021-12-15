@@ -123,31 +123,28 @@ def main(argv):
         # plt.plot(diff(sy, 15), '-o', color='r', markersize=3)
         # plt.plot(target.y, '-o', color='r', markersize=3)
     else:
-        x = medfilt(cameraPos.x, 51)
-        z = medfilt(cameraPos.z, 51)
-
+        # x = medfilt(cameraPos.x, 51)
+        # z = medfilt(cameraPos.z, 51)
         # y = difference(cameraPos.y, targetPos.y)
         # y = medfilt(y, 101)
         # y = targetPos.y
         # y = cameraPos.y
-        print(len(cameraPos.y))
-        cy = medfilt(cameraPos.y, 15)
-        print(len(cy))
-        ty = medfilt(targetPos.y, 15)
+        # cy = medfilt(cameraPos.y, 15)
+        ty = medfilt(targetPos.y, 31)
         # y = difference(cy, ty)
-        ty_round = []
-        for i in ty:
-            ty_round.append(round(i))
+        # ty_round = []
+        # for i in ty:
+        #     ty_round.append(round(i))
 
-        y = ty_round
-        
+        y = targetPos.y
+        # y = ty_round
         # y = list(medfilt(y, 15))
 
         kernel_size = 10
-        # half = (int) (kernel_size / 2)
-        for _ in range(kernel_size):
-            y.insert(0, y[0])
-            y.append(y[len(y) - 1])
+        # # half = (int) (kernel_size / 2)
+        # for _ in range(kernel_size):
+        #     y.insert(0, y[0])
+        #     y.append(y[len(y) - 1])
         
         # threshold = 3
         res = []
