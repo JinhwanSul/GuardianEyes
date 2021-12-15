@@ -1,6 +1,7 @@
 # GuardianEyes
 
-A GuardianEyes app helps the walking amblyopia. It can detect objects using ssd-MobileNet-v.1.   and measure distance using ARCore. Also, it detects the topography of the floor and distinguishes between walls and stairs.
+A GuardianEyes app helps the walking amblyopia.
+It recognizes context near user and distinguishes floor situation by mobile phone camera and provides live feedback.
 
 GuardianEyes 앱은 약시와 시각장애인의 보행을 도와주는 앱입니다. GuardianEyes는 휴대폰의 카메라를 이용하여 사용자의 주변 상황을 전달하고, 전방의 지면 상황을 감지하여 사용자에게 실시간 피드백을 제공합니다.
 
