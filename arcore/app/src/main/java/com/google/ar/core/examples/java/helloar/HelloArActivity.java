@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -209,6 +210,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Tracker
   private Tracker tracker;
 
+  private Vibrator vibrator;
+
   public int frame_count = 0;
   public final int FRAME_UNIT_NUM = 15;
   public final int DISCARD_FRAME_NUM = 100;
@@ -262,7 +265,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     surfaceView.setOnLongClickListener(view -> recording.changeViewMode());
 
     mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
-
+    vibrator = (Vibrator) getSystemService(this.VIBRATOR_SERVICE);
     updateUI();
   }
 
@@ -340,6 +343,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               String readMessage = null;
               readMessage = new String((byte[]) msg.obj, StandardCharsets.UTF_8);
               arduinoTextView.setText(readMessage.split("cm")[0]);
+              if ( Integer.parseInt(readMessage.split("cm")[0]) < 20) {
+                vibrator.vibrate(1000);
+              }
+
             }
 
             if(msg.what == CONNECTING_STATUS){
