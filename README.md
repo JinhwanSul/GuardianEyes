@@ -62,6 +62,6 @@ GuardianEyes는 카메라를 이용하기 때문에 카메라 시야 밖의 위�
 | Total | 9      |  9 |50|
 
 ## Requirements
-To install this app, you'll need the folling:
+To install this app, you'll need the follwing:
 - Android device over 29
 - Android Studio 4.1 or later
